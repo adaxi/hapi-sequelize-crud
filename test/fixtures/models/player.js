@@ -5,38 +5,38 @@ module.exports = (sequelize, DataTypes) => {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true,
+      autoIncrement: true
     },
     name: DataTypes.STRING,
     teamId: DataTypes.INTEGER,
-    active: DataTypes.BOOLEAN,
+    active: DataTypes.BOOLEAN
   }, {
     scopes: {
       returnsOne: {
         where: {
-          active: true,
-        },
+          active: true
+        }
       },
       returnsNone: {
         where: {
-          name: 'notaname',
-        },
+          name: 'notaname'
+        }
       },
       returnsAll: {
         where: {
           name: {
-            [Op.ne]: 'notaname',
-          },
-        },
-      },
-    },
-  });
+            [Op.ne]: 'notaname'
+          }
+        }
+      }
+    }
+  })
 
   Player.associate = (models) => {
     models.Player.belongsTo(models.Team, {
-      foreignKey: { name: 'teamId' },
-    });
+      foreignKey: { name: 'teamId' }
+    })
   }
 
   return Player
-};
+}

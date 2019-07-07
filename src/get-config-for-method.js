@@ -1,14 +1,14 @@
-const { set, get } = require('lodash');
-const Joi = require('@hapi/joi');
-const { Op } = require('sequelize');
+const { set, get } = require('lodash')
+const Joi = require('@hapi/joi')
+const { Op } = require('sequelize')
 
 // if the custom validation is a joi object we need to concat
 // else, assume it's an plain object and we can just add it in with .keys
 const concatToJoiObject = (joi, candidate) => {
-  if (!candidate) return joi;
-  else if (candidate.isJoi) return joi.concat(candidate);
-  else return joi.keys(candidate);
-};
+  if (!candidate) return joi
+  else if (candidate.isJoi) return joi.concat(candidate)
+  else return joi.keys(candidate)
+}
 
 const sequelizeOperators = {
   [Op.and]: Joi.any(),
@@ -32,8 +32,8 @@ const sequelizeOperators = {
   [Op.contains]: Joi.any(),
   [Op.contained]: Joi.any(),
   [Op.any]: Joi.any(),
-  [Op.col]: Joi.any(),
-};
+  [Op.col]: Joi.any()
+}
 
 const whereMethods = [
   'list',
@@ -41,102 +41,102 @@ const whereMethods = [
   'scope',
   'destroy',
   'destoryScope',
-  'destroyAll',
-];
+  'destroyAll'
+]
 
 const includeMethods = [
   'list',
   'get',
   'scope',
-  'destoryScope',
-];
+  'destoryScope'
+]
 
 const payloadMethods = [
   'create',
-  'update',
-];
+  'update'
+]
 
 const scopeParamsMethods = [
   'destroyScope',
-  'scope',
-];
+  'scope'
+]
 
 const idParamsMethods = [
   'get',
-  'update',
-];
+  'update'
+]
 
 const restrictMethods = [
   'list',
-  'scope',
-];
+  'scope'
+]
 
 const getConfigForMethod = ({
-  method, attributeValidation, associationValidation, scopes = [], config = {},
+  method, attributeValidation, associationValidation, scopes = [], config = {}
 }) => {
-  const hasWhere = whereMethods.includes(method);
-  const hasInclude = includeMethods.includes(method);
-  const hasPayload = payloadMethods.includes(method);
-  const hasScopeParams = scopeParamsMethods.includes(method);
-  const hasIdParams = idParamsMethods.includes(method);
-  const hasRestrictMethods = restrictMethods.includes(method);
+  const hasWhere = whereMethods.includes(method)
+  const hasInclude = includeMethods.includes(method)
+  const hasPayload = payloadMethods.includes(method)
+  const hasScopeParams = scopeParamsMethods.includes(method)
+  const hasIdParams = idParamsMethods.includes(method)
+  const hasRestrictMethods = restrictMethods.includes(method)
   // clone the config so we don't modify it on multiple passes.
-  let methodConfig = { ...config, validate: { ...config.validate } };
+  let methodConfig = { ...config, validate: { ...config.validate } }
 
   if (hasWhere) {
     const query = concatToJoiObject(Joi.object()
       .keys({
         ...attributeValidation,
-        ...sequelizeOperators,
+        ...sequelizeOperators
       }),
-      get(methodConfig, 'validate.query')
-    );
+    get(methodConfig, 'validate.query')
+    )
 
-    methodConfig = set(methodConfig, 'validate.query', query);
+    methodConfig = set(methodConfig, 'validate.query', query)
   }
 
   if (hasInclude) {
     const query = concatToJoiObject(Joi.object()
       .keys({
-        ...associationValidation,
+        ...associationValidation
       }),
-      get(methodConfig, 'validate.query')
-    );
+    get(methodConfig, 'validate.query')
+    )
 
-    methodConfig = set(methodConfig, 'validate.query', query);
+    methodConfig = set(methodConfig, 'validate.query', query)
   }
 
   if (hasPayload) {
     const payload = concatToJoiObject(Joi.object()
       .keys({
-        ...attributeValidation,
+        ...attributeValidation
       }),
-      get(methodConfig, 'validate.payload')
-    );
+    get(methodConfig, 'validate.payload')
+    )
 
-    methodConfig = set(methodConfig, 'validate.payload', payload);
+    methodConfig = set(methodConfig, 'validate.payload', payload)
   }
 
   if (hasScopeParams) {
     const params = concatToJoiObject(Joi.object()
       .keys({
-        scope: Joi.string().valid(...scopes),
+        scope: Joi.string().valid(...scopes)
       }),
-      get(methodConfig, 'validate.params')
-    );
+    get(methodConfig, 'validate.params')
+    )
 
-    methodConfig = set(methodConfig, 'validate.params', params);
+    methodConfig = set(methodConfig, 'validate.params', params)
   }
 
   if (hasIdParams) {
     const params = concatToJoiObject(Joi.object()
       .keys({
-        id: Joi.any(),
+        id: Joi.any()
       }),
-      get(methodConfig, 'validate.params')
-    );
+    get(methodConfig, 'validate.params')
+    )
 
-    methodConfig = set(methodConfig, 'validate.params', params);
+    methodConfig = set(methodConfig, 'validate.params', params)
   }
 
   if (hasRestrictMethods) {
@@ -144,16 +144,16 @@ const getConfigForMethod = ({
       .keys({
         limit: Joi.number().min(0).integer(),
         offset: Joi.number().min(0).integer(),
-        order: [Joi.array(), Joi.string()],
+        order: [Joi.array(), Joi.string()]
       }),
-      get(methodConfig, 'validate.query')
-    );
+    get(methodConfig, 'validate.query')
+    )
 
-    methodConfig = set(methodConfig, 'validate.query', query);
+    methodConfig = set(methodConfig, 'validate.query', query)
   }
 
-  return methodConfig;
-};
+  return methodConfig
+}
 
 module.exports = {
   getConfigForMethod,

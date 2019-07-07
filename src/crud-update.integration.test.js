@@ -1,54 +1,53 @@
-const test = require('ava');
-const setup = require( '../test/integration-setup.js');
-require('sinon-bluebird');
+const test = require('ava')
+const setup = require('../test/integration-setup.js')
+require('sinon-bluebird')
 
-const STATUS_OK = 200;
-const STATUS_NOT_FOUND = 404;
-const STATUS_BAD_REQUEST = 400;
+const STATUS_OK = 200
+const STATUS_NOT_FOUND = 404
+const STATUS_BAD_REQUEST = 400
 
-setup(test);
+setup(test)
 
 test('where /player/1 {name: "Chard"}', async (t) => {
-  const { server, instances } = t.context;
-  const { player1 } = instances;
-  const url = `/player/${player1.id}`;
-  const method = 'PUT';
-  const payload = { name: 'Chard' };
+  const { server, instances } = t.context
+  const { player1 } = instances
+  const url = `/player/${player1.id}`
+  const method = 'PUT'
+  const payload = { name: 'Chard' }
 
-  const { result, statusCode } = await server.inject({ url, method, payload });
-  t.is(statusCode, STATUS_OK);
-  t.is(result.id, player1.id);
-  t.is(result.name, payload.name);
-});
+  const { result, statusCode } = await server.inject({ url, method, payload })
+  t.is(statusCode, STATUS_OK)
+  t.is(result.id, player1.id)
+  t.is(result.name, payload.name)
+})
 
 test('not found /player/10 {name: "Chard"}', async (t) => {
-  const { server } = t.context;
+  const { server } = t.context
   // this doesn't exist in our fixtures
-  const url = '/player/10';
-  const method = 'PUT';
-  const payload = { name: 'Chard' };
+  const url = '/player/10'
+  const method = 'PUT'
+  const payload = { name: 'Chard' }
 
-  const { statusCode } = await server.inject({ url, method, payload });
-  t.is(statusCode, STATUS_NOT_FOUND);
-});
-
+  const { statusCode } = await server.inject({ url, method, payload })
+  t.is(statusCode, STATUS_NOT_FOUND)
+})
 
 test('no payload /player/1', async (t) => {
-  const { server, instances } = t.context;
-  const { player1 } = instances;
-  const url = `/player/${player1.id}`;
-  const method = 'PUT';
+  const { server, instances } = t.context
+  const { player1 } = instances
+  const url = `/player/${player1.id}`
+  const method = 'PUT'
 
-  const { statusCode } = await server.inject({ url, method });
-  t.is(statusCode, STATUS_BAD_REQUEST);
-});
+  const { statusCode } = await server.inject({ url, method })
+  t.is(statusCode, STATUS_BAD_REQUEST)
+})
 
 test('not found /notamodel {name: "Chard"}', async (t) => {
-  const { server } = t.context;
-  const url = '/notamodel';
-  const method = 'PUT';
-  const payload = { name: 'Chard' };
+  const { server } = t.context
+  const url = '/notamodel'
+  const method = 'PUT'
+  const payload = { name: 'Chard' }
 
-  const { statusCode } = await server.inject({ url, method, payload });
-  t.is(statusCode, STATUS_NOT_FOUND);
-});
+  const { statusCode } = await server.inject({ url, method, payload })
+  t.is(statusCode, STATUS_NOT_FOUND)
+})

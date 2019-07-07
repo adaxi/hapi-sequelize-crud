@@ -3,16 +3,16 @@ module.exports = (sequelize, DataTypes) => {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true,
+      autoIncrement: true
     },
-    name: DataTypes.STRING,
-  }, {});
+    name: DataTypes.STRING
+  }, {})
 
   City.associate = (models) => {
     models.City.hasMany(models.Team, {
-      foreignKey: { name: 'cityId' },
-    });
+      foreignKey: { name: 'cityId' }
+    })
   }
 
   return City
-};
+}

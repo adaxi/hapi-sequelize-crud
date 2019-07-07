@@ -3,20 +3,20 @@ module.exports = (sequelize, DataTypes) => {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
-      autoIncrement: true,
+      autoIncrement: true
     },
     name: DataTypes.STRING,
-    cityId: DataTypes.INTEGER,
-  }, {});
+    cityId: DataTypes.INTEGER
+  }, {})
 
   Team.associate = (models) => {
     models.Team.belongsTo(models.City, {
-      foreignKey: { name: 'cityId' },
-    });
+      foreignKey: { name: 'cityId' }
+    })
     models.Team.hasMany(models.Player, {
-      foreignKey: { name: 'teamId' },
-    });
+      foreignKey: { name: 'teamId' }
+    })
   }
 
   return Team
-};
+}
