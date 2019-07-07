@@ -1,5 +1,6 @@
-const test = require('ava')
+/* eslint-env jest */
 const Joi = require('@hapi/joi')
+
 const {
   getConfigForMethod,
   whereMethods,
@@ -11,568 +12,420 @@ const {
   sequelizeOperators
 } = require('./get-config-for-method.js')
 
-test.beforeEach((t) => {
-  t.context.models = ['MyModel']
+let models
+let scopes
+let config
+let attributeValidation
+let associationValidation
 
-  t.context.scopes = ['aScope']
-
-  t.context.attributeValidation = {
-    myKey: Joi.any()
-  }
-
-  t.context.associationValidation = {
-    include: Joi.array().items(Joi.string().valid(t.context.models))
-  }
-
-  t.context.config = {
-    cors: {}
-  }
-})
-
-test('validate.query sequelizeOperators', (t) => {
-  whereMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({ method })
-    const { query } = configForMethod.validate
-
-    t.truthy(
-      query,
-      `applies query validation for ${method}`
-    )
-
-    Object.keys(sequelizeOperators).forEach((operator) => {
-      t.ifError(
-        query.validate({ [operator]: true }).error
-        , `applies sequelize operator "${operator}" in validate.where for ${method}`
-      )
-    })
-
-    t.truthy(
-      query.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
+describe('Test route configuration', () => {
+  beforeEach(() => {
+    models = ['MyModel']
+    scopes = ['aScope']
+    config = { cors: {} }
+    attributeValidation = { myKey: Joi.any() }
+    associationValidation = {
+      include: Joi.array().items(Joi.string().valid(models))
+    }
   })
-})
 
-test('validate.query attributeValidation', (t) => {
-  const { attributeValidation } = t.context
-
-  whereMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({ method, attributeValidation })
-    const { query } = configForMethod.validate
-
-    Object.keys(attributeValidation).forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: true }).error
-        , `applies attributeValidation (${key}) to validate.query`
-      )
+  test('validate.query sequelizeOperators', () => {
+    whereMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({ method })
+      const { query } = configForMethod.validate
+      expect(query).toBeTruthy()
+      Object.keys(sequelizeOperators).forEach((operator) => {
+        expect(query.validate({ [operator]: true }).error).toBeNull()
+      })
+      expect(query.validate({ notAThing: true }).error).toBeTruthy()
     })
-
-    t.truthy(
-      query.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
   })
-})
 
-test('query attributeValidation w/ config as plain object', (t) => {
-  const { attributeValidation } = t.context
-  const config = {
-    validate: {
-      query: {
-        aKey: Joi.boolean()
+  test('validate.query attributeValidation', () => {
+    whereMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({ method, attributeValidation })
+      const { query } = configForMethod.validate
+
+      Object.keys(attributeValidation).forEach((key) => {
+        expect(query.validate({ [key]: true }).error).toBeNull()
+      })
+      expect(query.validate({ notAThing: true }).error).toBeTruthy()
+    })
+  })
+
+  test('query attributeValidation w/ config as plain object', () => {
+    const config = {
+      validate: {
+        query: {
+          aKey: Joi.boolean()
+        }
       }
     }
-  }
 
-  whereMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({
-      method,
-      attributeValidation,
-      config
+    whereMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({
+        method,
+        attributeValidation,
+        config
+      })
+      const { query } = configForMethod.validate
+
+      const keys = [
+        ...Object.keys(attributeValidation),
+        ...Object.keys(config.validate.query)
+      ]
+
+      keys.forEach((key) => {
+        expect(query.validate({ [key]: true }).error).toBeNull()
+      })
+
+      expect(query.validate({ notAThing: true }).error).toBeTruthy()
     })
-    const { query } = configForMethod.validate
-
-    const keys = [
-      ...Object.keys(attributeValidation),
-      ...Object.keys(config.validate.query)
-    ]
-
-    keys.forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: true }).error
-        , `applies ${key} to validate.query`
-      )
-    })
-
-    t.truthy(
-      query.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
   })
-})
 
-test('query attributeValidation w/ config as joi object', (t) => {
-  const { attributeValidation } = t.context
-  const queryKeys = {
-    aKey: Joi.boolean()
-  }
-  const config = {
-    validate: {
-      query: Joi.object().keys(queryKeys)
+  test('query attributeValidation w/ config as joi object', () => {
+    const queryKeys = {
+      aKey: Joi.boolean()
     }
-  }
-
-  whereMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({
-      method,
-      attributeValidation,
-      config
-    })
-    const { query } = configForMethod.validate
-
-    const keys = [
-      ...Object.keys(attributeValidation),
-      ...Object.keys(queryKeys)
-    ]
-
-    keys.forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: true }).error
-        , `applies ${key} to validate.query`
-      )
-    })
-
-    t.truthy(
-      query.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
-  })
-})
-
-test('validate.query associationValidation', (t) => {
-  const { attributeValidation, associationValidation, models } = t.context
-
-  includeMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({
-      method,
-      attributeValidation,
-      associationValidation
-    })
-    const { query } = configForMethod.validate
-
-    Object.keys(attributeValidation).forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: 'true' }).error
-        , `applies attributeValidation (${key}) to validate.query when include should be applied`
-      )
-    })
-
-    Object.keys(associationValidation).forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: models }).error
-        , `applies associationValidation (${key}) to validate.query when include should be applied`
-      )
-    })
-
-    t.truthy(
-      query.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
-  })
-})
-
-test('query associationValidation w/ config as plain object', (t) => {
-  const { associationValidation, models } = t.context
-  const config = {
-    validate: {
-      query: {
-        aKey: Joi.boolean()
+    const config = {
+      validate: {
+        query: Joi.object().keys(queryKeys)
       }
     }
-  }
 
-  includeMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({
-      method,
-      associationValidation,
-      config
+    whereMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({
+        method,
+        attributeValidation,
+        config
+      })
+      const { query } = configForMethod.validate
+
+      const keys = [
+        ...Object.keys(attributeValidation),
+        ...Object.keys(queryKeys)
+      ]
+
+      keys.forEach((key) => {
+        expect(query.validate({ [key]: true }).error).toBeNull()
+      })
+
+      expect(query.validate({ notAThing: true }).error).toBeTruthy()
     })
-    const { query } = configForMethod.validate
-
-    Object.keys(associationValidation).forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: models }).error
-        , `applies ${key} to validate.query`
-      )
-    })
-
-    Object.keys(config.validate.query).forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: true }).error
-        , `applies ${key} to validate.query`
-      )
-    })
-
-    t.truthy(
-      query.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
   })
-})
 
-test('query associationValidation w/ config as joi object', (t) => {
-  const { associationValidation, models } = t.context
-  const queryKeys = {
-    aKey: Joi.boolean()
-  }
-  const config = {
-    validate: {
-      query: Joi.object().keys(queryKeys)
-    }
-  }
+  test('validate.query associationValidation', () => {
+    includeMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({
+        method,
+        attributeValidation,
+        associationValidation
+      })
+      const { query } = configForMethod.validate
 
-  includeMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({
-      method,
-      associationValidation,
-      config
+      Object.keys(attributeValidation).forEach((key) => {
+        expect(query.validate({ [key]: 'true' }).error).toBeNull()
+      })
+
+      Object.keys(associationValidation).forEach((key) => {
+        expect(query.validate({ [key]: models }).error).toBeNull()
+      })
+
+      expect(query.validate({ notAThing: true }).error).toBeTruthy()
     })
-    const { query } = configForMethod.validate
-
-    Object.keys(associationValidation).forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: models }).error
-        , `applies ${key} to validate.query`
-      )
-    })
-
-    Object.keys(queryKeys).forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: true }).error
-        , `applies ${key} to validate.query`
-      )
-    })
-
-    t.truthy(
-      query.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
   })
-})
 
-test('validate.payload associationValidation', (t) => {
-  const { attributeValidation } = t.context
-
-  payloadMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({ method, attributeValidation })
-    const { payload } = configForMethod.validate
-
-    Object.keys(attributeValidation).forEach((key) => {
-      t.ifError(
-        payload.validate({ [key]: true }).error
-        , `applies attributeValidation (${key}) to validate.payload`
-      )
-    })
-
-    t.truthy(
-      payload.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
-  })
-})
-
-test('payload attributeValidation w/ config as plain object', (t) => {
-  const { attributeValidation } = t.context
-  const config = {
-    validate: {
-      payload: {
-        aKey: Joi.boolean()
+  test('query associationValidation w/ config as plain object', () => {
+    const config = {
+      validate: {
+        query: {
+          aKey: Joi.boolean()
+        }
       }
     }
-  }
 
-  payloadMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({
-      method,
-      attributeValidation,
-      config
+    includeMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({
+        method,
+        associationValidation,
+        config
+      })
+      const { query } = configForMethod.validate
+
+      Object.keys(associationValidation).forEach((key) => {
+        expect(query.validate({ [key]: models }).error).toBeNull()
+      })
+
+      Object.keys(config.validate.query).forEach((key) => {
+        expect(query.validate({ [key]: true }).error).toBeNull()
+      })
+
+      expect(query.validate({ notAThing: true }).error).toBeTruthy()
     })
-    const { payload } = configForMethod.validate
-
-    const keys = [
-      ...Object.keys(attributeValidation),
-      ...Object.keys(config.validate.payload)
-    ]
-
-    keys.forEach((key) => {
-      t.ifError(
-        payload.validate({ [key]: true }).error
-        , `applies ${key} to validate.payload`
-      )
-    })
-
-    t.truthy(
-      payload.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
   })
-})
 
-test('payload attributeValidation w/ config as joi object', (t) => {
-  const { attributeValidation } = t.context
-  const payloadKeys = {
-    aKey: Joi.boolean()
-  }
-  const config = {
-    validate: {
-      payload: Joi.object().keys(payloadKeys)
+  test('query associationValidation w/ config as joi object', () => {
+    const queryKeys = {
+      aKey: Joi.boolean()
     }
-  }
-
-  payloadMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({
-      method,
-      attributeValidation,
-      config
-    })
-    const { payload } = configForMethod.validate
-
-    const keys = [
-      ...Object.keys(attributeValidation),
-      ...Object.keys(payloadKeys)
-    ]
-
-    keys.forEach((key) => {
-      t.ifError(
-        payload.validate({ [key]: true }).error
-        , `applies ${key} to validate.payload`
-      )
-    })
-
-    t.truthy(
-      payload.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
-  })
-})
-
-test('validate.params scopeParamsMethods', (t) => {
-  const { scopes } = t.context
-
-  scopeParamsMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({ method, scopes })
-    const { params } = configForMethod.validate
-
-    scopes.forEach((key) => {
-      t.ifError(
-        params.validate({ scope: key }).error
-        , `applies "scope: ${key}" to validate.params`
-      )
-    })
-
-    t.truthy(
-      params.validate({ scope: 'notAthing' }).error
-      , 'errors on a non-valid key'
-    )
-  })
-})
-
-test('params scopeParamsMethods w/ config as plain object', (t) => {
-  const { scopes } = t.context
-  const config = {
-    validate: {
-      params: {
-        aKey: Joi.boolean()
+    const config = {
+      validate: {
+        query: Joi.object().keys(queryKeys)
       }
     }
-  }
 
-  scopeParamsMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({
-      method,
-      scopes,
-      config
+    includeMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({
+        method,
+        associationValidation,
+        config
+      })
+      const { query } = configForMethod.validate
+
+      Object.keys(associationValidation).forEach((key) => {
+        expect(query.validate({ [key]: models }).error).toBeNull()
+      })
+
+      Object.keys(queryKeys).forEach((key) => {
+        expect(query.validate({ [key]: true }).error).toBeNull()
+      })
+
+      expect(query.validate({ notAThing: true }).error).toBeTruthy()
     })
-    const { params } = configForMethod.validate
-
-    scopes.forEach((key) => {
-      t.ifError(
-        params.validate({ scope: key }).error
-        , `applies "scope: ${key}" to validate.params`
-      )
-    })
-
-    Object.keys(config.validate.params).forEach((key) => {
-      t.ifError(
-        params.validate({ [key]: true }).error
-        , `applies ${key} to validate.params`
-      )
-    })
-
-    t.truthy(
-      params.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
   })
-})
 
-test('params scopeParamsMethods w/ config as joi object', (t) => {
-  const { scopes } = t.context
-  const paramsKeys = {
-    aKey: Joi.boolean()
-  }
-  const config = {
-    validate: {
-      params: Joi.object().keys(paramsKeys)
-    }
-  }
+  test('validate.payload associationValidation', () => {
+    payloadMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({ method, attributeValidation })
+      const { payload } = configForMethod.validate
 
-  scopeParamsMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({
-      method,
-      scopes,
-      config
+      Object.keys(attributeValidation).forEach((key) => {
+        expect(payload.validate({ [key]: true }).error).toBeNull()
+      })
+
+      expect(payload.validate({ notAThing: true }).error).toBeTruthy()
     })
-    const { params } = configForMethod.validate
-
-    scopes.forEach((key) => {
-      t.ifError(
-        params.validate({ scope: key }).error
-        , `applies "scope: ${key}" to validate.params`
-      )
-    })
-
-    Object.keys(paramsKeys).forEach((key) => {
-      t.ifError(
-        params.validate({ [key]: true }).error
-        , `applies ${key} to validate.params`
-      )
-    })
-
-    t.truthy(
-      params.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
   })
-})
 
-test('validate.payload idParamsMethods', (t) => {
-  idParamsMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({ method })
-    const { params } = configForMethod.validate
-
-    t.ifError(
-      params.validate({ id: 'aThing' }).error
-      , 'applies id to validate.params'
-    )
-  })
-})
-
-test('validate.query restrictMethods', (t) => {
-  restrictMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({ method })
-    const { query } = configForMethod.validate
-    const restrictKeys = ['limit', 'offset']
-
-    restrictKeys.forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: 0 }).error
-        , `applies restriction (${key}) to validate.query`
-      )
-    })
-
-    t.ifError(
-      query.validate({ order: ['thing', 'DESC'] }).error
-      , 'applies `order` to validate.query'
-    )
-
-    t.truthy(
-      query.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
-  })
-})
-
-test('validate.query restrictMethods w/ config as plain object', (t) => {
-  const config = {
-    validate: {
-      query: {
-        aKey: Joi.boolean()
+  test('payload attributeValidation w/ config as plain object', () => {
+    const config = {
+      validate: {
+        payload: {
+          aKey: Joi.boolean()
+        }
       }
     }
-  }
 
-  restrictMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({
-      method,
-      config
+    payloadMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({
+        method,
+        attributeValidation,
+        config
+      })
+      const { payload } = configForMethod.validate
+
+      const keys = [
+        ...Object.keys(attributeValidation),
+        ...Object.keys(config.validate.payload)
+      ]
+
+      keys.forEach((key) => {
+        expect(payload.validate({ [key]: true }).error).toBeNull()
+      })
+
+      expect(payload.validate({ notAThing: true }).error).toBeTruthy()
     })
-    const { query } = configForMethod.validate
-
-    const keys = [
-      ...Object.keys(config.validate.query)
-    ]
-
-    keys.forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: true }).error
-        , `applies ${key} to validate.query`
-      )
-    })
-
-    t.truthy(
-      query.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
   })
-})
 
-test('validate.query restrictMethods w/ config as joi object', (t) => {
-  const queryKeys = {
-    aKey: Joi.boolean()
-  }
-  const config = {
-    validate: {
-      query: Joi.object().keys(queryKeys)
+  test('payload attributeValidation w/ config as joi object', () => {
+    const payloadKeys = {
+      aKey: Joi.boolean()
     }
-  }
+    const config = {
+      validate: {
+        payload: Joi.object().keys(payloadKeys)
+      }
+    }
 
-  whereMethods.forEach((method) => {
-    const configForMethod = getConfigForMethod({
-      method,
-      config
+    payloadMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({
+        method,
+        attributeValidation,
+        config
+      })
+      const { payload } = configForMethod.validate
+
+      const keys = [
+        ...Object.keys(attributeValidation),
+        ...Object.keys(payloadKeys)
+      ]
+
+      keys.forEach((key) => {
+        expect(payload.validate({ [key]: true }).error).toBeNull()
+      })
+
+      expect(payload.validate({ notAThing: true }).error).toBeTruthy()
     })
-    const { query } = configForMethod.validate
-
-    const keys = [
-      ...Object.keys(queryKeys)
-    ]
-
-    keys.forEach((key) => {
-      t.ifError(
-        query.validate({ [key]: true }).error
-        , `applies ${key} to validate.query`
-      )
-    })
-
-    t.truthy(
-      query.validate({ notAThing: true }).error
-      , 'errors on a non-valid key'
-    )
-  })
-})
-
-test('does not modify initial config on multiple passes', (t) => {
-  const { config } = t.context
-  const originalConfig = { ...config }
-
-  whereMethods.forEach((method) => {
-    getConfigForMethod({ method, ...t.context })
   })
 
-  t.deepEqual(
-    config
-    , originalConfig
-    , 'does not modify the original config object'
-  )
+  test('validate.params scopeParamsMethods', () => {
+    scopeParamsMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({ method, scopes })
+      const { params } = configForMethod.validate
+
+      scopes.forEach((key) => {
+        expect(params.validate({ scope: key }).error).toBeNull()
+      })
+
+      expect(params.validate({ notAThing: true }).error).toBeTruthy()
+    })
+  })
+
+  test('params scopeParamsMethods w/ config as plain object', () => {
+    const config = {
+      validate: {
+        params: {
+          aKey: Joi.boolean()
+        }
+      }
+    }
+
+    scopeParamsMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({
+        method,
+        scopes,
+        config
+      })
+      const { params } = configForMethod.validate
+
+      scopes.forEach((key) => {
+        expect(params.validate({ scope: key }).error).toBeNull()
+      })
+
+      Object.keys(config.validate.params).forEach((key) => {
+        expect(params.validate({ [key]: true }).error).toBeNull()
+      })
+
+      expect(params.validate({ notAThing: true }).error).toBeTruthy()
+    })
+  })
+
+  test('params scopeParamsMethods w/ config as joi object', () => {
+    const paramsKeys = {
+      aKey: Joi.boolean()
+    }
+    const config = {
+      validate: {
+        params: Joi.object().keys(paramsKeys)
+      }
+    }
+
+    scopeParamsMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({
+        method,
+        scopes,
+        config
+      })
+      const { params } = configForMethod.validate
+
+      scopes.forEach((key) => {
+        expect(params.validate({ scope: key }).error).toBeNull()
+      })
+
+      Object.keys(paramsKeys).forEach((key) => {
+        expect(params.validate({ [key]: true }).error).toBeNull()
+      })
+
+      expect(params.validate({ notAThing: true }).error).toBeTruthy()
+    })
+  })
+
+  test('validate.payload idParamsMethods', () => {
+    idParamsMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({ method })
+      const { params } = configForMethod.validate
+
+      expect(params.validate({ id: 'aThing' }).error).toBeNull()
+    })
+  })
+
+  test('validate.query restrictMethods', () => {
+    restrictMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({ method })
+      const { query } = configForMethod.validate
+      const restrictKeys = ['limit', 'offset']
+
+      restrictKeys.forEach((key) => {
+        expect(query.validate({ [key]: 0 }).error).toBeNull()
+      })
+
+      expect(query.validate({ order: ['thing', 'DESC'] }).error).toBeNull()
+      expect(query.validate({ notAThing: true }).error).toBeTruthy()
+    })
+  })
+
+  test('validate.query restrictMethods w/ config as plain object', () => {
+    const config = {
+      validate: {
+        query: {
+          aKey: Joi.boolean()
+        }
+      }
+    }
+
+    restrictMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({
+        method,
+        config
+      })
+      const { query } = configForMethod.validate
+
+      const keys = [
+        ...Object.keys(config.validate.query)
+      ]
+
+      keys.forEach((key) => {
+        expect(query.validate({ [key]: true }).error).toBeNull()
+      })
+
+      expect(query.validate({ notAThing: true }).error).toBeTruthy()
+    })
+  })
+
+  test('validate.query restrictMethods w/ config as joi object', () => {
+    const queryKeys = {
+      aKey: Joi.boolean()
+    }
+    const config = {
+      validate: {
+        query: Joi.object().keys(queryKeys)
+      }
+    }
+
+    whereMethods.forEach((method) => {
+      const configForMethod = getConfigForMethod({
+        method,
+        config
+      })
+      const { query } = configForMethod.validate
+
+      const keys = [
+        ...Object.keys(queryKeys)
+      ]
+
+      keys.forEach((key) => {
+        expect(query.validate({ [key]: true }).error).toBeNull()
+      })
+
+      expect(query.validate({ notAThing: true }).error).toBeTruthy()
+    })
+  })
+
+  test('does not modify initial config on multiple passes', () => {
+    const originalConfig = { ...config }
+    whereMethods.forEach((method) => {
+      getConfigForMethod({ method, models, scopes, config, attributeValidation, associationValidation })
+    })
+    expect(config).toEqual(originalConfig)
+  })
 })

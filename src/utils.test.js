@@ -1,112 +1,66 @@
-const test = require('ava')
+/* eslint-env jest */
+
 const { parseLimitAndOffset, parseOrder, parseWhere } = require('./utils.js')
 
-test.beforeEach((t) => {
-  const models = t.context.models = { User: {} }
-  t.context.request = { query: {}, models }
-})
+let models
+let request
 
-test('parseLimitAndOffset is a function', (t) => {
-  t.is(typeof parseLimitAndOffset, 'function')
-})
+describe('Test utilites', () => {
+  beforeEach(() => {
+    models = { User: {} }
+    request = { query: {}, models }
+  })
 
-test('parseLimitAndOffset returns limit and offset', (t) => {
-  const { request } = t.context
-  request.query.limit = 1
-  request.query.offset = 2
-  request.query.thing = 'hi'
+  test('parseLimitAndOffset is a function', () => {
+    expect(typeof parseLimitAndOffset).toBe('function')
+  })
 
-  t.is(
-    parseLimitAndOffset(request).limit
-    , request.query.limit
-  )
+  test('parseLimitAndOffset returns limit and offset', () => {
+    request.query = { limit: 1, offset: 2, thing: 'hi' }
+    expect(parseLimitAndOffset(request).limit).toBe(request.query.limit)
+    expect(parseLimitAndOffset(request).offset).toBe(request.query.offset)
+  })
 
-  t.is(
-    parseLimitAndOffset(request).offset
-    , request.query.offset
-  )
-})
+  test('parseLimitAndOffset returns limit and offset as numbers', () => {
+    const limit = 1
+    const offset = 2
+    request.query = { limit: `${limit}`, offset: `${offset}`, thing: 'hi' }
+    expect(parseLimitAndOffset(request).limit).toBe(limit)
+    expect(parseLimitAndOffset(request).offset).toBe(offset)
+  })
 
-test('parseLimitAndOffset returns limit and offset as numbers', (t) => {
-  const { request } = t.context
-  const limit = 1
-  const offset = 2
-  request.query.limit = `${limit}`
-  request.query.offset = `${offset}`
-  request.query.thing = 'hi'
+  test('parseOrder is a function', () => {
+    expect(typeof parseOrder).toBe('function')
+  })
 
-  t.is(
-    parseLimitAndOffset(request).limit
-    , limit
-  )
+  test('parseOrder returns order when a string', () => {
+    const order = 'thing'
+    request.query = { order: order, thing: 'hi' }
+    expect(parseOrder(request)).toEqual([ [ order ] ])
+  })
 
-  t.is(
-    parseLimitAndOffset(request).offset
-    , offset
-  )
-})
+  test('parseOrder returns order when json', () => {
+    request.query.order = [ JSON.stringify({ model: 'User' }), 'DESC' ]
+    request.query.thing = 'hi'
+    expect(parseOrder(request)).toEqual([ { model: models.User }, 'DESC' ])
+  })
 
-test('parseOrder is a function', (t) => {
-  t.is(typeof parseOrder, 'function')
-})
+  test('parseOrder returns null when not defined', () => {
+    request.query.thing = 'hi'
+    expect(parseOrder(request)).toBeNull()
+  })
 
-test('parseOrder returns order when a string', (t) => {
-  const { request } = t.context
-  const order = 'thing'
-  request.query.order = order
-  request.query.thing = 'hi'
+  test('parseWhere is a function', () => {
+    expect(typeof parseWhere).toBe('function')
+  })
 
-  t.deepEqual(
-    parseOrder(request)
-    , [[order]]
-  )
-})
+  test('parseWhere returns the non-sequelize keys', () => {
+    request.query = { order: 'thing', include: 'User', limit: 2, thing: 'hi' }
+    expect(parseWhere(request)).toEqual({ thing: 'hi' })
+  })
 
-test('parseOrder returns order when json', (t) => {
-  const { request, models } = t.context
-  request.query.order = [JSON.stringify({ model: 'User' }), 'DESC']
-  request.query.thing = 'hi'
-
-  t.deepEqual(
-    parseOrder(request)
-    , [{ model: models.User }, 'DESC']
-  )
-})
-
-test('parseOrder returns null when not defined', (t) => {
-  const { request } = t.context
-  request.query.thing = 'hi'
-
-  t.is(
-    parseOrder(request)
-    , null
-  )
-})
-
-test('parseWhere is a function', (t) => {
-  t.is(typeof parseWhere, 'function')
-})
-
-test('parseWhere returns the non-sequelize keys', (t) => {
-  const { request } = t.context
-  request.query.order = 'thing'
-  request.query.include = 'User'
-  request.query.limit = 2
-  request.query.thing = 'hi'
-
-  t.deepEqual(
-    parseWhere(request)
-    , { thing: 'hi' }
-  )
-})
-
-test('parseWhere returns json converted keys', (t) => {
-  const { request } = t.context
-  request.query.order = 'hi'
-  request.query.thing = '{"id": {"$in": [2, 3]}}'
-
-  t.deepEqual(
-    parseWhere(request)
-    , { thing: { id: { $in: [2, 3] } } }
-  )
+  test('parseWhere returns json converted keys', () => {
+    request.query = { order: 'hi', thing: '{"id": {"$in": [2, 3]}}' }
+    expect(parseWhere(request)).toEqual({ thing: { id: { $in: [2, 3] } } })
+  })
 })

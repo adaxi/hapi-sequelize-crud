@@ -1,21 +1,39 @@
-const test = require('ava')
-const setup = require('../test/integration-setup.js')
-require('sinon-bluebird')
+/* eslint-env jest */
 
-const { modelNames } = setup(test)
+const { setupServer, setupModels, stopServer, modelNames } = require('../test/integration-setup.js')()
 
-const confirmRoute = (t, { path, method }) => {
-  const { server } = t.context
-  const routes = server.table()
-  t.truthy(routes.find(({ path: p, method: m }) => p === path && m === method))
-}
+describe('Test routes existence', () => {
+  let server
+  beforeAll(async () => {
+    server = await setupServer()
+    await setupModels()
+  })
 
-modelNames.forEach(({ singular, plural }) => {
-  test('get', confirmRoute, { path: `/${singular}/{id}`, method: 'get' })
-  test('list', confirmRoute, { path: `/${plural}/{id}`, method: 'get' })
-  test('scope', confirmRoute, { path: `/${plural}/{scope}`, method: 'get' })
-  test('create', confirmRoute, { path: `/${singular}`, method: 'post' })
-  test('destroy', confirmRoute, { path: `/${singular}`, method: 'delete' })
-  test('destroyScope', confirmRoute, { path: `/${plural}/{scope}`, method: 'delete' })
-  test('update', confirmRoute, { path: `/${singular}/{id}`, method: 'put' })
+  afterAll(() => {
+    stopServer()
+  })
+
+  modelNames.forEach(({ singular, plural }) => {
+    test(`Test route for 'get' for '/${singular}/{id?}'`, () => {
+      expect(server.table().find(({ path, method }) => (path === `/${singular}/{id?}` && method === 'get'))).toBeTruthy()
+    })
+    test(`Test route for 'list' for '/${plural}/{id?}'`, () => {
+      expect(server.table().find(({ path, method }) => (path === `/${plural}` && method === 'get'))).toBeTruthy()
+    })
+    test(`Test route for 'scope' for '/${plural}/{scope}'`, () => {
+      expect(server.table().find(({ path, method }) => (path === `/${plural}/{scope}` && method === 'get'))).toBeTruthy()
+    })
+    test(`Test route for 'create' for '/${singular}'`, () => {
+      expect(server.table().find(({ path, method }) => (path === `/${singular}` && method === 'post'))).toBeTruthy()
+    })
+    test(`Test route for 'destroy' for '/${singular}/{id?}'`, () => {
+      expect(server.table().find(({ path, method }) => (path === `/${singular}/{id?}` && method === 'delete'))).toBeTruthy()
+    })
+    test(`Test route for 'destroyScope' for '/${plural}/{scope}'`, () => {
+      expect(server.table().find(({ path, method }) => (path === `/${plural}/{scope}` && method === 'delete'))).toBeTruthy()
+    })
+    test(`Test route for 'update' for '/${singular}/{id}'`, () => {
+      expect(server.table().find(({ path, method }) => (path === `/${singular}/{id}` && method === 'put'))).toBeTruthy()
+    })
+  })
 })

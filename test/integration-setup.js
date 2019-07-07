@@ -1,42 +1,38 @@
-const { Server } = require('@hapi/hapi')
-const Sequelize = require('sequelize')
-const portfinder = require('portfinder')
-const path = require('path')
-const Promise = require('bluebird')
-const Qs = require('qs')
+/* eslint-env jest */
 
-const getPort = Promise.promisify(portfinder.getPort)
-const modelsPath = path.join(__dirname, 'fixtures', 'models')
-const modelsGlob = path.join(modelsPath, '**', '*.js')
+const Qs = require('qs')
+const Path = require('path')
+const Sequelize = require('sequelize')
+const Portfinder = require('portfinder')
+const { Server } = require('@hapi/hapi')
+
+const modelsPath = Path.join(__dirname, 'fixtures', 'models')
+const modelsGlob = Path.join(modelsPath, '**', '*.js')
 const dbName = 'db'
 
 // these are what's in the fixtures dir
 const modelNames = [
-  { Singluar: 'City', singular: 'city', Plural: 'Cities', plural: 'cities' },
-  { Singluar: 'Team', singular: 'team', Plural: 'Teams', plural: 'teams' },
-  { Singluar: 'Player', singular: 'player', Plural: 'Players', plural: 'players' }
+  { Singular: 'City', singular: 'city', Plural: 'Cities', plural: 'cities' },
+  { Singular: 'Team', singular: 'team', Plural: 'Teams', plural: 'teams' },
+  { Singular: 'Player', singular: 'player', Plural: 'Players', plural: 'players' }
 ]
 
-module.exports = (test) => {
-  test.beforeEach('get an open port', async (t) => {
-    t.context.port = await getPort()
-  })
+module.exports = () => {
+  let hapi
+  let sequelize
 
-  test.beforeEach('setup server', async (t) => {
-    const sequelize = t.context.sequelize = new Sequelize({
-      dialect: 'sqlite',
-      logging: false
-    })
+  const setupServer = async () => {
+    sequelize = new Sequelize({ dialect: 'sqlite', logging: false })
 
-    const server = t.context.server = new Server({
+    hapi = new Server({
       host: '0.0.0.0',
-      port: t.context.port,
+      port: await Portfinder.getPortPromise(),
       query: {
         parser: (query) => Qs.parse(query)
       }
     })
 
-    await server.register([
+    await hapi.register([
       {
         plugin: require('hapi-sequelizejs'),
         options: {
@@ -54,23 +50,23 @@ module.exports = (test) => {
         }
       }
     ])
-  })
 
-  test.beforeEach('create data', async (t) => {
-    const { Player, Team, City } = t.context.sequelize.models
+    return hapi
+  }
+
+  const setupModels = async () => {
+    const { Player, Team, City } = sequelize.models
     const city1 = await City.create({ name: 'Healdsburg' })
     const team1 = await Team.create({ name: 'Baseballs', cityId: city1.id })
     const team2 = await Team.create({ name: 'Footballs', cityId: city1.id })
-    const player1 = await Player.create({
-      name: 'Cat', teamId: team1.id, active: true
-    })
+    const player1 = await Player.create({ name: 'Cat', teamId: team1.id, active: true })
     const player2 = await Player.create({ name: 'Pinot', teamId: team1.id })
     const player3 = await Player.create({ name: 'Syrah', teamId: team2.id })
-    t.context.instances = { city1, team1, team2, player1, player2, player3 }
-  })
+    return { city1, team1, team2, player1, player2, player3 }
+  }
 
   // kill the server so that we can exit and don't leak memory
-  test.afterEach('stop the server', (t) => t.context.server.stop())
+  const stopServer = () => hapi.stop()
 
-  return { modelNames }
+  return { setupServer, setupModels, stopServer, modelNames }
 }

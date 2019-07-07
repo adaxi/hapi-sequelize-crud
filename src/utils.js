@@ -24,12 +24,12 @@ const parseInclude = request => {
   const models = getModels(request)
 
   return include.map(a => {
-    const singluarOrPluralMatch = Object.keys(models).find((modelName) => {
+    const singularOrPluralMatch = Object.keys(models).find((modelName) => {
       const { _singular, _plural } = models[modelName]
       return _singular === a || _plural === a
     })
 
-    if (singluarOrPluralMatch) return models[singluarOrPluralMatch]
+    if (singularOrPluralMatch) return models[singularOrPluralMatch]
 
     if (typeof a === 'string') return models[a]
 
