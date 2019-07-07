@@ -1,6 +1,6 @@
-import test from 'ava';
-import 'sinon-bluebird';
-import setup from '../test/integration-setup.js';
+const test = require('ava');
+const setup = require('../test/integration-setup.js');
+require('sinon-bluebird');
 
 const STATUS_OK = 200;
 const STATUS_NOT_FOUND = 404;
@@ -46,7 +46,8 @@ test('/players?limit=2&offset=20', async (t) => {
   const url = `/players?limit=${limit}&offset=20`;
   const method = 'GET';
 
-  const { statusCode } = await server.inject({ url, method });
+  const res = await server.inject({ url, method });
+  const  { statusCode } = res;
   t.is(statusCode, STATUS_NOT_FOUND, 'with a offset/limit greater than the data, returns a 404');
 });
 

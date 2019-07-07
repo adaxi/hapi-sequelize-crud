@@ -1,5 +1,5 @@
-import oneToOne from './one-to-one';
-import oneToMany from './one-to-many';
-import associate from './associate';
+const { oneToOne } = require('./one-to-one');
+const { oneToMany } = require('./one-to-many');
+const { associate } = require('./associate');
 
-export { oneToOne, oneToMany, associate };
+module.exports = { oneToOne, oneToMany, associate };

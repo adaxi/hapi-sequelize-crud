@@ -1,5 +1,5 @@
-import test from 'ava';
-import { parseLimitAndOffset, parseOrder, parseWhere } from './utils.js';
+const test = require('ava');
+const { parseLimitAndOffset, parseOrder, parseWhere } = require('./utils.js');
 
 test.beforeEach((t) => {
   const models = t.context.models = { User: {} };

@@ -1,8 +1,9 @@
-import hapi from 'hapi';
-import Sequelize from 'sequelize';
-import portfinder from 'portfinder';
-import path from 'path';
-import Promise from 'bluebird';
+const { Server } = require('@hapi/hapi');
+const Sequelize = require('sequelize');
+const portfinder = require('portfinder');
+const path = require('path');
+const Promise = require('bluebird');
+const Qs = require('qs')
 
 const getPort = Promise.promisify(portfinder.getPort);
 const modelsPath = path.join(__dirname, 'fixtures', 'models');
@@ -17,7 +18,7 @@ const modelNames = [
 ];
 
 
-export default (test) => {
+module.exports = (test) => {
   test.beforeEach('get an open port', async (t) => {
     t.context.port = await getPort();
   });
@@ -28,30 +29,33 @@ export default (test) => {
       logging: false,
     });
 
-    const server = t.context.server = new hapi.Server();
-    server.connection({
+    const server = t.context.server = new Server({
       host: '0.0.0.0',
       port: t.context.port,
+      query: {
+        parser: (query) => Qs.parse(query)
+      }
     });
 
-    await server.register({
-      register: require('hapi-sequelize'),
-      options: {
-        name: dbName,
-        models: [modelsGlob],
-        sequelize,
-        sync: true,
-        forceSync: true,
+    await server.register([
+      {
+        plugin: require('hapi-sequelizejs'),
+        options: {
+          name: dbName,
+          models: [modelsGlob],
+          sequelize,
+          sync: true,
+          forceSync: true,
+        },
       },
-    });
+      {
+        plugin: require('../src/index.js'),
+        options: {
+          name: dbName,
+        },
+      }
+    ]);
 
-    await server.register({
-      register: require('../src/index.js'),
-      options: {
-        name: dbName,
-      },
-    },
-    );
   });
 
   test.beforeEach('create data', async (t) => {

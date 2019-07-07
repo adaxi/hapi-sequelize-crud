@@ -1,13 +1,15 @@
-import test from 'ava';
-import 'sinon-bluebird';
-import setup from '../test/integration-setup.js';
+const test = require('ava');
+const setup = require('../test/integration-setup.js');
+require('sinon-bluebird');
 
 const { modelNames } = setup(test);
 
 const confirmRoute = (t, { path, method }) => {
   const { server } = t.context;
-  // there's only one connection, so just get the first table
-  const routes = server.table()[0].table;
+
+  const routes = server.table()
+
+ //  console.log(routes.map(({ method, path}) => ({ method, path })))
 
   t.truthy(routes.find((route) => {
     return route.path = path
@@ -20,7 +22,7 @@ modelNames.forEach(({ singular, plural }) => {
   test('list', confirmRoute, { path: `/${plural}/{id}`, method: 'get' });
   test('scope', confirmRoute, { path: `/${plural}/{scope}`, method: 'get' });
   test('create', confirmRoute, { path: `/${singular}`, method: 'post' });
-  test('destroy', confirmRoute, { path: `/${plural}`, method: 'delete' });
+  test('destroy', confirmRoute, { path: `/${singular}`, method: 'delete' });
   test('destroyScope', confirmRoute, { path: `/${plural}/{scope}`, method: 'delete' });
   test('update', confirmRoute, { path: `/${singular}/{id}`, method: 'put' });
 });

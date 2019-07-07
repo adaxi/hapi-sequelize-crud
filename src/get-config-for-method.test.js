@@ -1,7 +1,7 @@
-import test from 'ava';
-import joi from 'joi';
-import
-  getConfigForMethod, {
+const test = require('ava');
+const Joi = require('@hapi/joi');
+const {
+  getConfigForMethod,
   whereMethods,
   includeMethods,
   payloadMethods,
@@ -9,7 +9,7 @@ import
   idParamsMethods,
   restrictMethods,
   sequelizeOperators,
-} from './get-config-for-method.js';
+} = require('./get-config-for-method.js');
 
 test.beforeEach((t) => {
   t.context.models = ['MyModel'];
@@ -17,11 +17,11 @@ test.beforeEach((t) => {
   t.context.scopes = ['aScope'];
 
   t.context.attributeValidation = {
-    myKey: joi.any(),
+    myKey: Joi.any(),
   };
 
   t.context.associationValidation = {
-    include: joi.array().items(joi.string().valid(t.context.models)),
+    include: Joi.array().items(Joi.string().valid(t.context.models)),
   };
 
   t.context.config = {
@@ -29,7 +29,7 @@ test.beforeEach((t) => {
   };
 });
 
-test('validate.query seqeulizeOperators', (t) => {
+test('validate.query sequelizeOperators', (t) => {
   whereMethods.forEach((method) => {
     const configForMethod = getConfigForMethod({ method });
     const { query } = configForMethod.validate;
@@ -79,7 +79,7 @@ test('query attributeValidation w/ config as plain object', (t) => {
   const config = {
     validate: {
       query: {
-        aKey: joi.boolean(),
+        aKey: Joi.boolean(),
       },
     },
   };
@@ -114,11 +114,11 @@ test('query attributeValidation w/ config as plain object', (t) => {
 test('query attributeValidation w/ config as joi object', (t) => {
   const { attributeValidation } = t.context;
   const queryKeys = {
-    aKey: joi.boolean(),
+    aKey: Joi.boolean(),
   };
   const config = {
     validate: {
-      query: joi.object().keys(queryKeys),
+      query: Joi.object().keys(queryKeys),
     },
   };
 
@@ -160,9 +160,12 @@ test('validate.query associationValidation', (t) => {
     });
     const { query } = configForMethod.validate;
 
+    // console.log(Joi.describe(query))
+    // console.log(query.validate({ myKey: true }).error)
+
     Object.keys(attributeValidation).forEach((key) => {
       t.ifError(
-        query.validate({ [key]: true }).error
+        query.validate({ [key]: 'true' }).error
         , `applies attributeValidation (${key}) to validate.query when include should be applied`
       );
     });
@@ -186,7 +189,7 @@ test('query associationValidation w/ config as plain object', (t) => {
   const config = {
     validate: {
       query: {
-        aKey: joi.boolean(),
+        aKey: Joi.boolean(),
       },
     },
   };
@@ -223,11 +226,11 @@ test('query associationValidation w/ config as plain object', (t) => {
 test('query associationValidation w/ config as joi object', (t) => {
   const { associationValidation, models } = t.context;
   const queryKeys = {
-    aKey: joi.boolean(),
+    aKey: Joi.boolean(),
   };
   const config = {
     validate: {
-      query: joi.object().keys(queryKeys),
+      query: Joi.object().keys(queryKeys),
     },
   };
 
@@ -286,7 +289,7 @@ test('payload attributeValidation w/ config as plain object', (t) => {
   const config = {
     validate: {
       payload: {
-        aKey: joi.boolean(),
+        aKey: Joi.boolean(),
       },
     },
   };
@@ -321,11 +324,11 @@ test('payload attributeValidation w/ config as plain object', (t) => {
 test('payload attributeValidation w/ config as joi object', (t) => {
   const { attributeValidation } = t.context;
   const payloadKeys = {
-    aKey: joi.boolean(),
+    aKey: Joi.boolean(),
   };
   const config = {
     validate: {
-      payload: joi.object().keys(payloadKeys),
+      payload: Joi.object().keys(payloadKeys),
     },
   };
 
@@ -382,7 +385,7 @@ test('params scopeParamsMethods w/ config as plain object', (t) => {
   const config = {
     validate: {
       params: {
-        aKey: joi.boolean(),
+        aKey: Joi.boolean(),
       },
     },
   };
@@ -419,11 +422,11 @@ test('params scopeParamsMethods w/ config as plain object', (t) => {
 test('params scopeParamsMethods w/ config as joi object', (t) => {
   const { scopes } = t.context;
   const paramsKeys = {
-    aKey: joi.boolean(),
+    aKey: Joi.boolean(),
   };
   const config = {
     validate: {
-      params: joi.object().keys(paramsKeys),
+      params: Joi.object().keys(paramsKeys),
     },
   };
 
@@ -498,7 +501,7 @@ test('validate.query restrictMethods w/ config as plain object', (t) => {
   const config = {
     validate: {
       query: {
-        aKey: joi.boolean(),
+        aKey: Joi.boolean(),
       },
     },
   };
@@ -530,11 +533,11 @@ test('validate.query restrictMethods w/ config as plain object', (t) => {
 
 test('validate.query restrictMethods w/ config as joi object', (t) => {
   const queryKeys = {
-    aKey: joi.boolean(),
+    aKey: Joi.boolean(),
   };
   const config = {
     validate: {
-      query: joi.object().keys(queryKeys),
+      query: Joi.object().keys(queryKeys),
     },
   };
 

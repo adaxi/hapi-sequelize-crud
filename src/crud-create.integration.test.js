@@ -1,6 +1,6 @@
 import test from 'ava';
 import 'sinon-bluebird';
-import setup from '../test/integration-setup.js';
+const setup = require('../test/integration-setup.js');
 
 const STATUS_OK = 200;
 const STATUS_NOT_FOUND = 404;
@@ -39,6 +39,7 @@ test('no payload /player/1', async (t) => {
   const url = '/player';
   const method = 'POST';
 
-  const { statusCode } = await server.inject({ url, method });
+  const response = await server.inject({ url, method });
+  const { statusCode } = response
   t.is(statusCode, STATUS_BAD_REQUEST);
 });

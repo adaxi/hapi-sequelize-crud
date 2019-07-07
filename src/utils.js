@@ -1,5 +1,5 @@
-import { omit, identity, toNumber, isString, isUndefined } from 'lodash';
-import { notImplemented } from 'boom';
+const { omit, identity, toNumber, isString, isUndefined } = require('lodash');
+const { notImplemented } = require('@hapi/boom');
 
 const sequelizeKeys = ['include', 'order', 'limit', 'offset'];
 
@@ -7,8 +7,8 @@ const getModels = (request) => {
   const noGetDb = typeof request.getDb !== 'function';
   const noRequestModels = !request.models;
   if (noGetDb && noRequestModels) {
-    return notImplemented('`request.getDb` or `request.models` are not defined.'
-                   + 'Be sure to load hapi-sequelize before hapi-sequelize-crud.');
+    throw notImplemented('`request.getDb` or `request.models` are not defined.'
+                   + 'Be sure to load hapi-sequelizejs before hapi-sequelize-restfull.');
   }
 
   const { models } = noGetDb ? request : request.getDb();
@@ -16,14 +16,13 @@ const getModels = (request) => {
   return models;
 };
 
-export const parseInclude = request => {
+const parseInclude = request => {
   const include = Array.isArray(request.query.include)
     ? request.query.include
     : [request.query.include]
     ;
 
   const models = getModels(request);
-  if (models.isBoom) return models;
 
   return include.map(a => {
     const singluarOrPluralMatch = Object.keys(models).find((modelName) => {
@@ -43,7 +42,7 @@ export const parseInclude = request => {
   }).filter(identity);
 };
 
-export const parseWhere = request => {
+const parseWhere = request => {
   const where = omit(request.query, sequelizeKeys);
 
   for (const key of Object.keys(where)) {
@@ -57,7 +56,7 @@ export const parseWhere = request => {
   return where;
 };
 
-export const parseLimitAndOffset = (request) => {
+const parseLimitAndOffset = (request) => {
   const { limit, offset } = request.query;
   const out = {};
   if (!isUndefined(limit)) {
@@ -88,13 +87,12 @@ const parseOrderArray = (order, models) => {
   });
 };
 
-export const parseOrder = (request) => {
+const parseOrder = (request) => {
   const { order } = request.query;
 
   if (!order) return null;
 
   const models = getModels(request);
-  if (models.isBoom) return models;
 
   // transform to an array so sequelize will escape the input for us and
   // maintain security. See http://docs.sequelizejs.com/en/latest/docs/querying/#ordering
@@ -105,7 +103,7 @@ export const parseOrder = (request) => {
   return parsedOrder;
 };
 
-export const getMethod = (model, association, plural = true, method = 'get') => {
+const getMethod = (model, association, plural = true, method = 'get') => {
   const a = plural ? association.original.plural : association.original.singular;
   const b = plural ? association.original.singular : association.original.plural; // alternative
   const fn = model[`${method}${a}`] || model[`${method}${b}`];
@@ -113,3 +111,11 @@ export const getMethod = (model, association, plural = true, method = 'get') => 
 
   return false;
 };
+
+module.exports = {
+  parseInclude,
+  parseWhere,
+  parseLimitAndOffset,
+  parseOrder,
+  getMethod
+}

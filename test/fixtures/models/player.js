@@ -1,5 +1,7 @@
-export default (sequelize, DataTypes) => {
-  return sequelize.define('Player', {
+const { Op } = require('sequelize')
+
+module.exports = (sequelize, DataTypes) => {
+  const Player = sequelize.define('Player', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -9,13 +11,6 @@ export default (sequelize, DataTypes) => {
     teamId: DataTypes.INTEGER,
     active: DataTypes.BOOLEAN,
   }, {
-    classMethods: {
-      associate: (models) => {
-        models.Player.belongsTo(models.Team, {
-          foreignKey: { name: 'teamId' },
-        });
-      },
-    },
     scopes: {
       returnsOne: {
         where: {
@@ -30,10 +25,18 @@ export default (sequelize, DataTypes) => {
       returnsAll: {
         where: {
           name: {
-            $ne: 'notaname',
+            [Op.ne]: 'notaname',
           },
         },
       },
     },
   });
+
+  Player.associate = (models) => {
+    models.Player.belongsTo(models.Team, {
+      foreignKey: { name: 'teamId' },
+    });
+  }
+
+  return Player
 };

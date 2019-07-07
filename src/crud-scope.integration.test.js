@@ -1,6 +1,6 @@
-import test from 'ava';
-import 'sinon-bluebird';
-import setup from '../test/integration-setup.js';
+const test = require('ava');
+const setup = require('../test/integration-setup.js');
+require('sinon-bluebird');
 
 const STATUS_OK = 200;
 const STATUS_NOT_FOUND = 404;

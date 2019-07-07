@@ -1,12 +1,13 @@
-import joi from 'joi';
-import error from '../error';
-import _ from 'lodash';
-import { parseInclude, parseWhere, getMethod } from '../utils';
+const _ = require('lodash');
+const Joi = require('@hapi/joi');
+const SequelizeErrorHandler = require('../sequelize-error-handler');
+
+const { parseInclude, parseWhere, getMethod } = require('../utils');
 
 let prefix;
 let defaultConfig;
 
-export default (server, a, b, names, options) => {
+const oneToMany = (server, a, b, names, options) => {
   prefix = options.prefix;
   defaultConfig = options.defaultConfig;
 
@@ -19,104 +20,110 @@ export default (server, a, b, names, options) => {
   update(server, a, b, names);
 };
 
-export const get = (server, a, b, names) => {
+const get = (server, a, b, names) => {
   server.route({
     method: 'GET',
     path: `${prefix}/${names.a.singular}/{aid}/${names.b.singular}/{bid}`,
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
+    async handler(request, h) {
+      try{ 
+        const include = parseInclude(request);
 
-      const base = await a.findOne({
-        where: {
-          [a.primaryKeyField]: request.params.aid,
-        },
-      });
+        const base = await a.findOne({
+          where: {
+            [a.primaryKeyField]: request.params.aid,
+          },
+        });
 
-      const method = getMethod(base, names.b);
+        const method = getMethod(base, names.b);
 
-      const list = await method({ where: {
-        [b.primaryKeyField]: request.params.bid,
-      }, include });
+        const list = await method({ where: {
+          [b.primaryKeyField]: request.params.bid,
+        }, include });
 
-      if (Array.isArray(list)) {
-        reply(list[0]);
-      } else {
-        reply(list);
+        if (Array.isArray(list)) {
+          return list[0];
+        } else {
+          return list;
+        }
+      } catch (err) {
+        SequelizeErrorHandler(err)
       }
     },
-
     config: defaultConfig,
   });
 };
 
-export const list = (server, a, b, names) => {
+const list = (server, a, b, names) => {
   server.route({
     method: 'GET',
     path: `${prefix}/${names.a.singular}/{aid}/${names.b.plural}`,
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
+    async handler(request, h) {
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
 
-      const base = await a.findOne({
-        where: {
-          [a.primaryKeyField]: request.params.aid,
-        },
-      });
+        const base = await a.findOne({
+          where: {
+            [a.primaryKeyField]: request.params.aid,
+          },
+        });
 
-      const method = getMethod(base, names.b);
-      const list = await method({ where, include });
+        const method = getMethod(base, names.b);
+        const list = await method({ where, include });
 
-      reply(list);
+        return list;
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
     },
-
     config: defaultConfig,
   });
 };
 
-export const scope = (server, a, b, names) => {
+const scope = (server, a, b, names) => {
   const scopes = Object.keys(b.options.scopes);
 
   server.route({
     method: 'GET',
     path: `${prefix}/${names.a.singular}/{aid}/${names.b.plural}/{scope}`,
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
-
-      const base = await a.findOne({
-        where: {
-          [a.primaryKeyField]: request.params.aid,
-        },
-      });
-
-      const method = getMethod(base, names.b);
-      const list = await method({
-        scope: request.params.scope,
-        where,
-        include,
-      });
-
-      reply(list);
+    async handler(request, h) {
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
+  
+        const base = await a.findOne({
+          where: {
+            [a.primaryKeyField]: request.params.aid,
+          },
+        });
+  
+        const method = getMethod(base, names.b);
+        const list = await method({
+          scope: request.params.scope,
+          where,
+          include,
+        });
+  
+        return list;
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
     },
-
     config: _.defaultsDeep({
       validate: {
-        params: joi.object().keys({
-          scope: joi.string().valid(...scopes),
-          aid: joi.number().integer().required(),
+        params: Joi.object().keys({
+          scope: Joi.string().valid(...scopes),
+          aid: Joi.number().integer().required(),
         }),
       },
     }, defaultConfig),
   });
 };
 
-export const scopeScope = (server, a, b, names) => {
+const scopeScope = (server, a, b, names) => {
   const scopes = {
     a: Object.keys(a.options.scopes),
     b: Object.keys(b.options.scopes),
@@ -126,125 +133,146 @@ export const scopeScope = (server, a, b, names) => {
     method: 'GET',
     path: `${prefix}/${names.a.plural}/{scopea}/${names.b.plural}/{scopeb}`,
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
-
-      const list = await b.scope(request.params.scopeb).findAll({
-        where,
-        include: include.concat({
-          model: a.scope(request.params.scopea),
-        }),
-      });
-
-      reply(list);
+    async handler(request, h) {
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
+  
+        const list = await b.scope(request.params.scopeb).findAll({
+          where,
+          include: include.concat({
+            model: a.scope(request.params.scopea),
+          }),
+        });
+  
+        return list;
+      } catch (err) {
+        SequelizeErrorHandler
+      }
     },
-
     config: _.defaultsDeep({
       validate: {
-        params: joi.object().keys({
-          scopea: joi.string().valid(...scopes.a),
-          scopeb: joi.string().valid(...scopes.b),
+        params: Joi.object().keys({
+          scopea: Joi.string().valid(...scopes.a),
+          scopeb: Joi.string().valid(...scopes.b),
         }),
       },
     }, defaultConfig),
   });
 };
 
-export const destroy = (server, a, b, names) => {
+const destroy = (server, a, b, names) => {
   server.route({
     method: 'DELETE',
     path: `${prefix}/${names.a.singular}/{aid}/${names.b.plural}`,
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
-
-      const base = await a.findOne({
-        where: {
-          [a.primaryKeyField]: request.params.aid,
-        },
-      });
-
-      const method = getMethod(base, names.b, true, 'get');
-      const list = await method({ where, include });
-      await Promise.all(list.map(item =>
-        item.destroy()
-      ));
-
-      reply(list);
+    async handler(request, h) {
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
+  
+        const base = await a.findOne({
+          where: {
+            [a.primaryKeyField]: request.params.aid,
+          },
+        });
+  
+        const method = getMethod(base, names.b, true, 'get');
+        const list = await method({ where, include });
+        await Promise.all(list.map(item =>
+          item.destroy()
+        ));
+  
+        return list;
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
     },
   });
 };
 
-export const destroyScope = (server, a, b, names) => {
+const destroyScope = (server, a, b, names) => {
   const scopes = Object.keys(b.options.scopes);
 
   server.route({
     method: 'DELETE',
     path: `${prefix}/${names.a.singular}/{aid}/${names.b.plural}/{scope}`,
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
+    async handler(request, h) {
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
 
-      const base = await a.findOne({
-        where: {
-          [a.primarykeyField]: request.params.aid,
-        },
-      });
+        const base = await a.findOne({
+          where: {
+            [a.primarykeyField]: request.params.aid,
+          },
+        });
 
-      const method = getMethod(base, names.b, true, 'get');
+        const method = getMethod(base, names.b, true, 'get');
 
-      const list = await method({
-        scope: request.params.scope,
-        where,
-        include,
-      });
+        const list = await method({
+          scope: request.params.scope,
+          where,
+          include,
+        });
 
-      await Promise.all(list.map(instance => instance.destroy()));
+        await Promise.all(list.map(instance => instance.destroy()));
 
-      reply(list);
+        return list;
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
     },
 
     config: _.defaultsDeep({
       validate: {
-        params: joi.object().keys({
-          scope: joi.string().valid(...scopes),
-          aid: joi.number().integer().required(),
+        params: Joi.object().keys({
+          scope: Joi.string().valid(...scopes),
+          aid: Joi.number().integer().required(),
         }),
       },
     }, defaultConfig),
   });
 };
 
-export const update = (server, a, b, names) => {
+const update = (server, a, b, names) => {
   server.route({
     method: 'PUT',
     path: `${prefix}/${names.a.singular}/{aid}/${names.b.plural}`,
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
+    async handler(request, h) {
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
 
-      const base = await a.findOne({
-        where: {
-          [a.primaryKeyField]: request.params.aid,
-        },
-      });
+        const base = await a.findOne({
+          where: {
+            [a.primaryKeyField]: request.params.aid,
+          },
+        });
 
-      const method = getMethod(base, names.b);
-      const list = await method({ where, include });
+        const method = getMethod(base, names.b);
+        const list = await method({ where, include });
 
-      await Promise.all(list.map(instance => instance.update(request.payload)));
+        await Promise.all(list.map(instance => instance.update(request.payload)));
 
-      reply(list);
+        return list;
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
     },
-
     config: defaultConfig,
   });
 };
+
+module.exports = {
+  oneToMany,
+  get,
+  list,
+  scope,
+  scopeScope,
+  destroy,
+  destroyScope,
+  update
+}

@@ -1,5 +1,5 @@
-export default (sequelize, DataTypes) => {
-  return sequelize.define('Team', {
+module.exports = (sequelize, DataTypes) => {
+  const Team = sequelize.define('Team', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -7,16 +7,16 @@ export default (sequelize, DataTypes) => {
     },
     name: DataTypes.STRING,
     cityId: DataTypes.INTEGER,
-  }, {
-    classMethods: {
-      associate: (models) => {
-        models.Team.belongsTo(models.City, {
-          foreignKey: { name: 'cityId' },
-        });
-        models.Team.hasMany(models.Player, {
-          foreignKey: { name: 'teamId' },
-        });
-      },
-    },
-  });
+  }, {});
+
+  Team.associate = (models) => {
+    models.Team.belongsTo(models.City, {
+      foreignKey: { name: 'cityId' },
+    });
+    models.Team.hasMany(models.Player, {
+      foreignKey: { name: 'teamId' },
+    });
+  }
+
+  return Team
 };

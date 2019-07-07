@@ -1,6 +1,6 @@
-import test from 'ava';
-import 'sinon-bluebird';
-import setup from '../test/integration-setup.js';
+const test = require('ava');
+const setup = require('../test/integration-setup.js');
+require('sinon-bluebird');
 
 const STATUS_OK = 200;
 const STATUS_NOT_FOUND = 404;
@@ -10,9 +10,10 @@ setup(test);
 test('single result /team?name=Baseball', async (t) => {
   const { server, instances } = t.context;
   const { team1 } = instances;
-  const path = `/team?name=${team1.name}`;
+  const url = `/team?name=${team1.name}`;
+  const method = 'GET';
 
-  const { result, statusCode } = await server.inject(path);
+  const { result, statusCode } = await server.inject({ url, method });
   t.is(statusCode, STATUS_OK);
   t.is(result.id, team1.id);
   t.is(result.name, team1.name);
@@ -22,29 +23,36 @@ test('no results /team?name=Baseball&id=2', async (t) => {
   const { server, instances } = t.context;
   const { team1 } = instances;
   // this doesn't exist in our fixtures
-  const path = `/team?name=${team1.name}&id=2`;
+  const url = `/team?name=${team1.name}&id=2`;
+  const method = 'GET';
 
-  const { statusCode } = await server.inject(path);
+  const res = await server.inject({ url, method });
+  const { statusCode } = res
+  console.log(res)
   t.is(statusCode, STATUS_NOT_FOUND);
 });
 
 test('single result from list query /teams?name=Baseball', async (t) => {
   const { server, instances } = t.context;
   const { team1 } = instances;
-  const path = `/team?name=${team1.name}`;
+  const url = `/teams?name=${team1.name}`;
+  const method = 'GET';
 
-  const { result, statusCode } = await server.inject(path);
+  const { result, statusCode } = await server.inject({ url, method });
+  console.log(result)
   t.is(statusCode, STATUS_OK);
-  t.is(result.id, team1.id);
-  t.is(result.name, team1.name);
+  t.is(result[0].id, team1.id);
+  t.is(result[0].name, team1.name);
+  t.is(result.length, 1)
 });
 
 test('multiple results from list query /players?teamId=1', async (t) => {
   const { server, instances } = t.context;
   const { team1, player1, player2 } = instances;
-  const path = `/players?teamId=${team1.id}`;
+  const url = `/players?teamId=${team1.id}`;
+  const method = 'GET';
 
-  const { result, statusCode } = await server.inject(path);
+  const { result, statusCode } = await server.inject({ url, method });
   t.is(statusCode, STATUS_OK);
   const playerIds = result.map(({ id }) => id);
   t.truthy(playerIds.includes(player1.id));

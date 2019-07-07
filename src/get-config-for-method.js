@@ -1,5 +1,6 @@
-import { set, get } from 'lodash';
-import joi from 'joi';
+const { set, get } = require('lodash');
+const Joi = require('@hapi/joi');
+const { Op } = require('sequelize');
 
 // if the custom validation is a joi object we need to concat
 // else, assume it's an plain object and we can just add it in with .keys
@@ -9,33 +10,32 @@ const concatToJoiObject = (joi, candidate) => {
   else return joi.keys(candidate);
 };
 
-
-export const sequelizeOperators = {
-  $and: joi.any(),
-  $or: joi.any(),
-  $gt: joi.any(),
-  $gte: joi.any(),
-  $lt: joi.any(),
-  $lte: joi.any(),
-  $ne: joi.any(),
-  $eq: joi.any(),
-  $not: joi.any(),
-  $between: joi.any(),
-  $notBetween: joi.any(),
-  $in: joi.any(),
-  $notIn: joi.any(),
-  $like: joi.any(),
-  $notLike: joi.any(),
-  $iLike: joi.any(),
-  $notILike: joi.any(),
-  $overlap: joi.any(),
-  $contains: joi.any(),
-  $contained: joi.any(),
-  $any: joi.any(),
-  $col: joi.any(),
+const sequelizeOperators = {
+  [Op.and]: Joi.any(),
+  [Op.or]: Joi.any(),
+  [Op.gt]: Joi.any(),
+  [Op.gte]: Joi.any(),
+  [Op.lt]: Joi.any(),
+  [Op.lte]: Joi.any(),
+  [Op.ne]: Joi.any(),
+  [Op.eq]: Joi.any(),
+  [Op.not]: Joi.any(),
+  [Op.between]: Joi.any(),
+  [Op.notBetween]: Joi.any(),
+  [Op.in]: Joi.any(),
+  [Op.notIn]: Joi.any(),
+  [Op.like]: Joi.any(),
+  [Op.notLike]: Joi.any(),
+  [Op.iLike]: Joi.any(),
+  [Op.notILike]: Joi.any(),
+  [Op.overlap]: Joi.any(),
+  [Op.contains]: Joi.any(),
+  [Op.contained]: Joi.any(),
+  [Op.any]: Joi.any(),
+  [Op.col]: Joi.any(),
 };
 
-export const whereMethods = [
+const whereMethods = [
   'list',
   'get',
   'scope',
@@ -44,34 +44,34 @@ export const whereMethods = [
   'destroyAll',
 ];
 
-export const includeMethods = [
+const includeMethods = [
   'list',
   'get',
   'scope',
   'destoryScope',
 ];
 
-export const payloadMethods = [
+const payloadMethods = [
   'create',
   'update',
 ];
 
-export const scopeParamsMethods = [
+const scopeParamsMethods = [
   'destroyScope',
   'scope',
 ];
 
-export const idParamsMethods = [
+const idParamsMethods = [
   'get',
   'update',
 ];
 
-export const restrictMethods = [
+const restrictMethods = [
   'list',
   'scope',
 ];
 
-export default ({
+const getConfigForMethod = ({
   method, attributeValidation, associationValidation, scopes = [], config = {},
 }) => {
   const hasWhere = whereMethods.includes(method);
@@ -84,7 +84,7 @@ export default ({
   let methodConfig = { ...config, validate: { ...config.validate } };
 
   if (hasWhere) {
-    const query = concatToJoiObject(joi.object()
+    const query = concatToJoiObject(Joi.object()
       .keys({
         ...attributeValidation,
         ...sequelizeOperators,
@@ -96,7 +96,7 @@ export default ({
   }
 
   if (hasInclude) {
-    const query = concatToJoiObject(joi.object()
+    const query = concatToJoiObject(Joi.object()
       .keys({
         ...associationValidation,
       }),
@@ -107,7 +107,7 @@ export default ({
   }
 
   if (hasPayload) {
-    const payload = concatToJoiObject(joi.object()
+    const payload = concatToJoiObject(Joi.object()
       .keys({
         ...attributeValidation,
       }),
@@ -118,9 +118,9 @@ export default ({
   }
 
   if (hasScopeParams) {
-    const params = concatToJoiObject(joi.object()
+    const params = concatToJoiObject(Joi.object()
       .keys({
-        scope: joi.string().valid(...scopes),
+        scope: Joi.string().valid(...scopes),
       }),
       get(methodConfig, 'validate.params')
     );
@@ -129,9 +129,9 @@ export default ({
   }
 
   if (hasIdParams) {
-    const params = concatToJoiObject(joi.object()
+    const params = concatToJoiObject(Joi.object()
       .keys({
-        id: joi.any(),
+        id: Joi.any(),
       }),
       get(methodConfig, 'validate.params')
     );
@@ -140,11 +140,11 @@ export default ({
   }
 
   if (hasRestrictMethods) {
-    const query = concatToJoiObject(joi.object()
+    const query = concatToJoiObject(Joi.object()
       .keys({
-        limit: joi.number().min(0).integer(),
-        offset: joi.number().min(0).integer(),
-        order: [joi.array(), joi.string()],
+        limit: Joi.number().min(0).integer(),
+        offset: Joi.number().min(0).integer(),
+        order: [Joi.array(), Joi.string()],
       }),
       get(methodConfig, 'validate.query')
     );
@@ -154,3 +154,14 @@ export default ({
 
   return methodConfig;
 };
+
+module.exports = {
+  getConfigForMethod,
+  whereMethods,
+  includeMethods,
+  payloadMethods,
+  scopeParamsMethods,
+  idParamsMethods,
+  restrictMethods,
+  sequelizeOperators
+}

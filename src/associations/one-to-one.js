@@ -1,10 +1,10 @@
-import error from '../error';
-import { parseInclude, parseWhere, getMethod } from '../utils';
+const SequelizeErrorHandler = require('../sequelize-error-handler');
+const { parseInclude, parseWhere, getMethod } = require('../utils');
 
 let prefix;
 let defaultConfig;
 
-export default (server, a, b, names, options) => {
+const oneToOne = (server, a, b, names, options) => {
   prefix = options.prefix;
   defaultConfig = options.defaultConfig;
 
@@ -14,29 +14,57 @@ export default (server, a, b, names, options) => {
   update(server, a, b, names);
 };
 
-export const get = (server, a, b, names) => {
+const get = (server, a, b, names) => {
   server.route({
     method: 'GET',
     path: `${prefix}/${names.a.singular}/{aid}/${names.b.singular}`,
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
+    async handler(request, h) {
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
 
-      const base = await a.findOne({
-        where: {
-          [a.primaryKeyField]: request.params.aid,
-        },
-      });
-      const method = getMethod(base, names.b, false);
+        const base = await a.findOne({
+          where: {
+            [a.primaryKeyField]: request.params.aid,
+          },
+        });
+        const method = getMethod(base, names.b, false);
 
-      const list = await method({ where, include, limit: 1 });
+        const list = await method({ where, include, limit: 1 });
 
-      if (Array.isArray(list)) {
-        reply(list[0]);
-      } else {
-        reply(list);
+        if (Array.isArray(list)) {
+          return list[0];
+        } else {
+          return list;
+        }
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
+    },
+    config: defaultConfig,
+  });
+};
+
+const create = (server, a, b, names) => {
+  server.route({
+    method: 'POST',
+    path: `${prefix}/${names.a.singular}/{id}/${names.b.singular}`,
+
+    async handler(request, h) {
+      try {
+        const base = await a.findOne({
+          where: {
+            [a.primaryKeyField]: request.params.id,
+          },
+        });
+  
+        const method = getMethod(base, names.b, false, 'create');
+        const instance = await method(request.payload);
+  
+        return instance;
+      } catch (err) {
+        SequelizeErrorHandler(err)
       }
     },
 
@@ -44,84 +72,74 @@ export const get = (server, a, b, names) => {
   });
 };
 
-export const create = (server, a, b, names) => {
-  server.route({
-    method: 'POST',
-    path: `${prefix}/${names.a.singular}/{id}/${names.b.singular}`,
-
-    @error
-    async handler(request, reply) {
-      const base = await a.findOne({
-        where: {
-          [a.primaryKeyField]: request.params.id,
-        },
-      });
-
-      const method = getMethod(base, names.b, false, 'create');
-      const instance = await method(request.payload);
-
-      reply(instance);
-    },
-
-    config: defaultConfig,
-  });
-};
-
-export const destroy = (server, a, b, names) => {
+const destroy = (server, a, b, names) => {
   server.route({
     method: 'DELETE',
     path: `${prefix}/${names.a.singular}/{aid}/${names.b.singular}/{bid}`,
 
-    @error
     async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
+  
+        const base = await a.findOne({
+          where: {
+            [a.primaryKeyField]: request.params.aid,
+          },
+        });
+  
+        where[b.primaryKeyField] = request.params.bid;
+  
+        const method = getMethod(base, names.b, false, 'get');
+        const instance = await method({ where, include });
+        await instance.destroy();
 
-      const base = await a.findOne({
-        where: {
-          [a.primaryKeyField]: request.params.aid,
-        },
-      });
-
-      where[b.primaryKeyField] = request.params.bid;
-
-      const method = getMethod(base, names.b, false, 'get');
-      const instance = await method({ where, include });
-      await instance.destroy();
-
-      reply(instance);
+        return instance
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
     },
 
     config: defaultConfig,
   });
 };
 
-export const update = (server, a, b, names) => {
+const update = (server, a, b, names) => {
   server.route({
     method: 'PUT',
     path: `${prefix}/${names.a.singular}/{aid}/${names.b.singular}/{bid}`,
 
-    @error
     async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
-
-      const base = await a.findOne({
-        where: {
-          id: request.params.aid,
-        },
-      });
-
-      where[b.primaryKeyField] = request.params.bid;
-
-      const method = getMethod(base, names.b, false);
-
-      const instance = await method({ where, include });
-      await instance.update(request.payload);
-
-      reply(instance);
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
+  
+        const base = await a.findOne({
+          where: {
+            id: request.params.aid,
+          },
+        });
+  
+        where[b.primaryKeyField] = request.params.bid;
+  
+        const method = getMethod(base, names.b, false);
+  
+        const instance = await method({ where, include });
+        await instance.update(request.payload);
+  
+        return instance;
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
     },
-
     config: defaultConfig,
   });
 };
+
+module.exports = {
+  oneToOne,
+  get,
+  create,
+  destroy,
+  update
+}

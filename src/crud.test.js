@@ -1,8 +1,8 @@
-import test from 'ava';
-import { list } from './crud.js';
-import { stub } from 'sinon';
-import uniqueId from 'lodash/uniqueId.js';
-import 'sinon-bluebird';
+const test = require('ava');
+const { list } = require('./crud.js');
+const { stub } = require('sinon');
+const uniqueId = require('lodash/uniqueId.js');
+require('sinon-bluebird');
 
 const METHODS = {
   GET: 'GET',
@@ -111,20 +111,15 @@ test('crud#list handler', async (t) => {
   const { handler } = server.route.args[0][0];
   model.findAll.resolves(models);
 
+
+  let response
   try {
-    await handler(request, reply);
+    response = await handler(request, reply);
   } catch (e) {
     t.ifError(e, 'does not error while handling');
   } finally {
     t.pass('does not error while handling');
   }
-
-  t.truthy(
-    reply.calledOnce
-    , 'calls reply only once'
-  );
-
-  const response = reply.args[0][0];
 
   t.falsy(response instanceof Error, response);
 
@@ -142,20 +137,17 @@ test('crud#list handler if parseInclude errors', async (t) => {
 
   list({ server, model });
   const { handler } = server.route.args[0][0];
+  // console.log(server.route.args)
 
-  await handler(request, reply);
-
-  t.truthy(
-    reply.calledOnce
-    , 'calls reply only once'
-  );
-
-  const response = reply.args[0][0];
-
-  t.truthy(
-    response.isBoom,
-    'responds with a Boom error'
-  );
+  try {
+    await handler(request, reply)
+    t.fail('should fail')
+  } catch (err) {
+    t.truthy(
+      err.isBoom,
+      'responds with a Boom error'
+    );
+  }
 });
 
 test('crud#list handler with limit', async (t) => {
@@ -169,20 +161,15 @@ test('crud#list handler with limit', async (t) => {
   const { handler } = server.route.args[0][0];
   model.findAll.resolves(models);
 
+  let response
   try {
-    await handler(request, reply);
+    response = await handler(request, reply);
   } catch (e) {
     t.ifError(e, 'does not error while handling');
   } finally {
     t.pass('does not error while handling');
   }
 
-  t.truthy(
-    reply.calledOnce
-    , 'calls reply only once'
-  );
-
-  const response = reply.args[0][0];
   const findAllArgs = findAll.args[0][0];
 
   t.falsy(response instanceof Error, response);
@@ -205,20 +192,15 @@ test('crud#list handler with order', async (t) => {
   const { handler } = server.route.args[0][0];
   model.findAll.resolves(models);
 
+  let response
   try {
-    await handler(request, reply);
+    response = await handler(request, reply);
   } catch (e) {
     t.ifError(e, 'does not error while handling');
   } finally {
     t.pass('does not error while handling');
   }
 
-  t.truthy(
-    reply.calledOnce
-    , 'calls reply only once'
-  );
-
-  const response = reply.args[0][0];
   const findAllArgs = findAll.args[0][0];
 
   t.falsy(response instanceof Error, response);

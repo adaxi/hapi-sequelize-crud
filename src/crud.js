@@ -1,11 +1,12 @@
-import joi from 'joi';
-import path from 'path';
-import error from './error';
-import _ from 'lodash';
-import { parseInclude, parseWhere, parseLimitAndOffset, parseOrder } from './utils';
-import { notFound } from 'boom';
-import * as associations from './associations/index';
-import getConfigForMethod from './get-config-for-method.js';
+const _ = require('lodash');
+const Path = require('path');
+const Joi = require('@hapi/joi');
+const { notFound, badRequest } = require('@hapi/boom');
+const SequelizeErrorHandler = require('./sequelize-error-handler');
+
+const { parseInclude, parseWhere, parseLimitAndOffset, parseOrder } = require('./utils');
+const associations = require('./associations/index');
+const { getConfigForMethod } = require('./get-config-for-method.js');
 
 const createAll = ({
   server,
@@ -32,8 +33,6 @@ const createAll = ({
   });
 };
 
-export { associations };
-
 /*
 The `models` option, becomes `permissions`, and can look like:
 
@@ -52,9 +51,9 @@ models: {
 
 */
 
-export default (server, model, { prefix, defaultConfig: config, models: permissions }) => {
+const crud = (server, model, { prefix, defaultConfig: config, models: permissions }) => {
   const modelName = model._singular;
-  const modelAttributes = Object.keys(model.attributes);
+  const modelAttributes = Object.keys(model.rawAttributes);
   const associatedModelNames = Object.keys(model.associations);
   const modelAssociations = [
     ...associatedModelNames,
@@ -67,15 +66,15 @@ export default (server, model, { prefix, defaultConfig: config, models: permissi
 
   const attributeValidation = modelAttributes.reduce((params, attribute) => {
     // TODO: use joi-sequelize
-    params[attribute] = joi.any();
+    params[attribute] = Joi.any();
     return params;
   }, {});
 
   const validAssociations = modelAssociations.length
-    ? joi.string().valid(...modelAssociations)
-    : joi.valid(null);
+    ? Joi.string().valid(...modelAssociations)
+    : Joi.valid(null);
   const associationValidation = {
-    include: [joi.array().items(validAssociations), validAssociations],
+    include: [Joi.array().items(validAssociations), validAssociations],
   };
 
   const scopes = Object.keys(model.options.scopes);
@@ -147,198 +146,225 @@ export default (server, model, { prefix, defaultConfig: config, models: permissi
   }
 };
 
-export const list = ({ server, model, prefix = '/', config }) => {
+const list = ({ server, model, prefix = '/', config }) => {
   server.route({
     method: 'GET',
-    path: path.join(prefix, model._plural),
+    path: Path.join(prefix, model._plural),
+    async handler(request, h) {
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
+        const { limit, offset } = parseLimitAndOffset(request);
+        const order = parseOrder(request);
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
-      const { limit, offset } = parseLimitAndOffset(request);
-      const order = parseOrder(request);
+        const list = await model.findAll({
+          where, include, limit, offset, order,
+        });
 
-      if (include instanceof Error) return void reply(include);
-
-      const list = await model.findAll({
-        where, include, limit, offset, order,
-      });
-
-      if (!list.length) return void reply(notFound('Nothing found.'));
-
-      reply(list.map((item) => item.toJSON()));
+        if (!list.length) {
+          throw notFound('Nothing found.');
+        }
+        return list.map((item) => item.toJSON());
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
     },
 
     config,
   });
 };
 
-export const get = ({ server, model, prefix = '/', config }) => {
+const get = ({ server, model, prefix = '/', config }) => {
   server.route({
     method: 'GET',
-    path: path.join(prefix, model._singular, '{id?}'),
+    path: Path.join(prefix, model._singular, '{id?}'),
+    async handler(request, h) {
+      try {
+        if (request.query) {
+          console.log('HERE1', request.query)
+        }
+        const include = parseInclude(request);
+        const where = parseWhere(request);
+        if (where) {
+          console.log('HERE', where)
+        }
+        const { id } = request.params;
+        if (id) where[model.primaryKeyField] = id;
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
-      const { id } = request.params;
-      if (id) where[model.primaryKeyField] = id;
+        const instance = await model.findOne({ where, include });
 
-      if (include instanceof Error) return void reply(include);
+        if (!instance) {
+          throw notFound(id ? `${id} not found.` : `Nothing found.`);
+        }
 
-      const instance = await model.findOne({ where, include });
-
-      if (!instance) return void reply(notFound(`${id} not found.`));
-
-      reply(instance.toJSON());
+        return instance.toJSON();
+      } catch (err) {
+        console.log(err)
+        SequelizeErrorHandler(err)
+      }
     },
     config,
   });
 };
 
-export const scope = ({ server, model, prefix = '/', config }) => {
+const scope = ({ server, model, prefix = '/', config }) => {
   server.route({
     method: 'GET',
-    path: path.join(prefix, model._plural, '{scope}'),
+    path: Path.join(prefix, model._plural, '{scope}'),
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
-      const { limit, offset } = parseLimitAndOffset(request);
-      const order = parseOrder(request);
+    async handler(request, h) {
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
+        const { limit, offset } = parseLimitAndOffset(request);
+        const order = parseOrder(request);
 
-      if (include instanceof Error) return void reply(include);
+        if (!(Object.keys(model.options.scopes || {}).includes(request.params.scope))) {
+          throw badRequest('Invalid scope.')
+        }
 
-      const list = await model.scope(request.params.scope).findAll({
-        include, where, limit, offset, order,
-      });
+        const list = await model.scope(request.params.scope).findAll({
+          include, where, limit, offset, order,
+        });
 
-      if (!list.length) return void reply(notFound('Nothing found.'));
+        if (!list.length) {
+          throw notFound('Nothing found.');
+        }
 
-      reply(list.map((item) => item.toJSON()));
+        return list.map((item) => item.toJSON());
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
     },
     config,
   });
 };
 
-export const create = ({ server, model, prefix = '/', config }) => {
+const create = ({ server, model, prefix = '/', config }) => {
   server.route({
     method: 'POST',
-    path: path.join(prefix, model._singular),
-
-    @error
-    async handler(request, reply) {
-      const instance = await model.create(request.payload);
-
-      reply(instance.toJSON());
-    },
-
-    config,
-  });
-};
-
-export const destroy = ({ server, model, prefix = '/', config }) => {
-  server.route({
-    method: 'DELETE',
-    path: path.join(prefix, model._singular, '{id?}'),
-
-    @error
-    async handler(request, reply) {
-      const where = parseWhere(request);
-      const { id } = request.params;
-      if (id) where[model.primaryKeyField] = id;
-
-      const list = await model.findAll({ where });
-
-      if (!list.length) {
-        return void reply(id
-          ? notFound(`${id} not found.`)
-          : notFound('Nothing found.')
-          );
+    path: Path.join(prefix, model._singular),
+    async handler(request, h) {
+      try {
+        const instance = await model.create(request.payload);
+        return instance.toJSON();
+      } catch (err) {
+        SequelizeErrorHandler(err)
       }
-
-      await Promise.all(list.map(instance => instance.destroy()));
-
-      const listAsJSON = list.map((item) => item.toJSON());
-      reply(listAsJSON.length === 1 ? listAsJSON[0] : listAsJSON);
     },
-
     config,
   });
 };
 
-export const destroyAll = ({ server, model, prefix = '/', config }) => {
+const destroy = ({ server, model, prefix = '/', config }) => {
   server.route({
     method: 'DELETE',
-    path: path.join(prefix, model._plural),
+    path: Path.join(prefix, model._singular, '{id?}'),
 
-    @error
-    async handler(request, reply) {
-      const where = parseWhere(request);
-      const { id } = request.params;
-
-      const list = await model.findAll({ where });
-
-      if (!list.length) {
-        return void reply(id
-          ? notFound(`${id} not found.`)
-          : notFound('Nothing found.')
-          );
+    async handler(request, h) {
+      try {
+        const where = parseWhere(request);
+        const { id } = request.params;
+        if (id) where[model.primaryKeyField] = id;
+  
+        const list = await model.findAll({ where });
+  
+        if (!list.length) {
+          throw notFound(id ? `${id} not found.`: 'Nothing found.')
+        }
+  
+        await Promise.all(list.map(instance => instance.destroy()));
+  
+        const listAsJSON = list.map((item) => item.toJSON());
+        return listAsJSON.length === 1 ? listAsJSON[0] : listAsJSON
+      } catch (err) {
+        SequelizeErrorHandler(err)
       }
-
-      await Promise.all(list.map(instance => instance.destroy()));
-
-      const listAsJSON = list.map((item) => item.toJSON());
-      reply(listAsJSON.length === 1 ? listAsJSON[0] : listAsJSON);
     },
-
     config,
   });
 };
 
-export const destroyScope = ({ server, model, prefix = '/', config }) => {
+const destroyAll = ({ server, model, prefix = '/', config }) => {
   server.route({
     method: 'DELETE',
-    path: path.join(prefix, model._plural, '{scope}'),
+    path: Path.join(prefix, model._plural),
 
-    @error
-    async handler(request, reply) {
-      const include = parseInclude(request);
-      const where = parseWhere(request);
+    async handler(request, h) {
+      try {
+        const where = parseWhere(request);
+  
+        const list = await model.findAll({ where });
+  
+        if (!list.length) {
+          throw notFound('Nothing found.')
+        }
+  
+        await Promise.all(list.map(instance => instance.destroy()));
+  
+        const listAsJSON = list.map((item) => item.toJSON());
+        return listAsJSON.length === 1 ? listAsJSON[0] : listAsJSON
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
+    },
 
-      if (include instanceof Error) return void reply(include);
+    config,
+  });
+};
 
-      const list = await model.scope(request.params.scope).findAll({ include, where });
+const destroyScope = ({ server, model, prefix = '/', config }) => {
+  server.route({
+    method: 'DELETE',
+    path: Path.join(prefix, model._plural, '{scope}'),
 
-      if (!list.length) return void reply(notFound('Nothing found.'));
+    async handler(request, h) {
+      try {
+        const include = parseInclude(request);
+        const where = parseWhere(request);
+        if (!(Object.keys(model.options.scopes || {}).includes(request.params.scope))) {
+          throw badRequest('Invalid scope.')
+        }
 
-      await Promise.all(list.map(instance => instance.destroy()));
-
-      const listAsJSON = list.map((item) => item.toJSON());
-      reply(listAsJSON.length === 1 ? listAsJSON[0] : listAsJSON);
+        const list = await model.scope(request.params.scope).findAll({ include, where });
+  
+        if (!list.length) {
+          throw notFound('Nothing found.')
+        }
+  
+        await Promise.all(list.map(instance => instance.destroy()));
+  
+        const listAsJSON = list.map((item) => item.toJSON());
+        return listAsJSON.length === 1 ? listAsJSON[0] : listAsJSON;
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
     },
     config,
   });
 };
 
-export const update = ({ server, model, prefix = '/', config }) => {
+const update = ({ server, model, prefix = '/', config }) => {
   server.route({
     method: 'PUT',
-    path: path.join(prefix, model._singular, '{id}'),
+    path: Path.join(prefix, model._singular, '{id}'),
 
-    @error
-    async handler(request, reply) {
-      const { id } = request.params;
-      const instance = await model.findById(id);
-
-      if (!instance) return void reply(notFound(`${id} not found.`));
-
-      await instance.update(request.payload);
-
-      reply(instance.toJSON());
+    async handler(request, h) {
+      try {
+        const { id } = request.params;
+        const instance = await model.findByPk(id);
+  
+        if (!instance) {
+          throw notFound(`${id} not found.`);
+        } 
+  
+        await instance.update(request.payload);
+  
+        return instance.toJSON()
+      } catch (err) {
+        SequelizeErrorHandler(err)
+      }
+     
     },
 
     config,
@@ -348,3 +374,16 @@ export const update = ({ server, model, prefix = '/', config }) => {
 const methods = {
   list, get, scope, create, destroy, destroyAll, destroyScope, update,
 };
+
+module.exports = {
+  crud,
+  associations,
+  list,
+  get,
+  scope,
+  create,
+  destroy,
+  destroyAll,
+  destroyScope,
+  update
+}

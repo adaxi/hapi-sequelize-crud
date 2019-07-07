@@ -1,18 +1,18 @@
-export default (sequelize, DataTypes) => {
-  return sequelize.define('City', {
+module.exports = (sequelize, DataTypes) => {
+  const City = sequelize.define('City', {
     id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true,
     },
     name: DataTypes.STRING,
-  }, {
-    classMethods: {
-      associate: (models) => {
-        models.City.hasMany(models.Team, {
-          foreignKey: { name: 'cityId' },
-        });
-      },
-    },
-  });
+  }, {});
+
+  City.associate = (models) => {
+    models.City.hasMany(models.Team, {
+      foreignKey: { name: 'cityId' },
+    });
+  }
+
+  return City
 };

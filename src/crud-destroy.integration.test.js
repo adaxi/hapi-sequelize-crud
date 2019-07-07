@@ -1,6 +1,6 @@
-import test from 'ava';
-import 'sinon-bluebird';
-import setup from '../test/integration-setup.js';
+const test = require('ava');
+const setup = require('../test/integration-setup.js');
+require('sinon-bluebird');
 
 const STATUS_OK = 200;
 const STATUS_NOT_FOUND = 404;
@@ -14,16 +14,16 @@ test('destroy where /player?name=Baseball', async (t) => {
   const url = `/player?name=${player1.name}`;
   const method = 'DELETE';
 
-  const presentPlayer = await Player.findById(player1.id);
+  const presentPlayer = await Player.findByPk(player1.id);
   t.truthy(presentPlayer);
 
   const { result, statusCode } = await server.inject({ url, method });
   t.is(statusCode, STATUS_OK);
   t.is(result.id, player1.id);
 
-  const deletedPlayer = await Player.findById(player1.id);
+  const deletedPlayer = await Player.findByPk(player1.id);
   t.falsy(deletedPlayer);
-  const stillTherePlayer = await Player.findById(player2.id);
+  const stillTherePlayer = await Player.findByPk(player2.id);
   t.truthy(stillTherePlayer);
 });
 
@@ -33,16 +33,16 @@ test('destroyAll where /players?name=Baseball', async (t) => {
   const url = `/players?name=${player1.name}`;
   const method = 'DELETE';
 
-  const presentPlayer = await Player.findById(player1.id);
+  const presentPlayer = await Player.findByPk(player1.id);
   t.truthy(presentPlayer);
 
   const { result, statusCode } = await server.inject({ url, method });
   t.is(statusCode, STATUS_OK);
   t.is(result.id, player1.id);
 
-  const deletedPlayer = await Player.findById(player1.id);
+  const deletedPlayer = await Player.findByPk(player1.id);
   t.falsy(deletedPlayer);
-  const stillTherePlayer = await Player.findById(player2.id);
+  const stillTherePlayer = await Player.findByPk(player2.id);
   t.truthy(stillTherePlayer);
 });
 
