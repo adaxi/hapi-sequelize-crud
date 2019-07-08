@@ -1,177 +1,189 @@
-const test = require('ava')
-const setup = require('../test/integration-setup.js')
-require('sinon-bluebird')
+/* eslint-env jest */
 
-const STATUS_OK = 200
-const STATUS_NOT_FOUND = 404
-const STATUS_BAD_REQUEST = 400
+const { setupServer, setupModels, stopServer } = require('../test/integration-setup.js')()
 
-setup(test)
+describe('Test destroy', () => {
+  const STATUS_OK = 200
+  const STATUS_NOT_FOUND = 404
+  const STATUS_BAD_REQUEST = 400
 
-test('destroy where /player?name=Baseball', async (t) => {
-  const { server, instances, sequelize: { models: { Player } } } = t.context
-  const { player1, player2 } = instances
-  const url = `/player?name=${player1.name}`
-  const method = 'DELETE'
+  let server
+  let instances
+  let sequelize
+  beforeEach(async () => {
+    server = await setupServer()
+    sequelize = server.plugins['hapi-sequelizejs'].db.sequelize
+    instances = await setupModels()
+  })
 
-  const presentPlayer = await Player.findByPk(player1.id)
-  t.truthy(presentPlayer)
+  afterEach(() => {
+    stopServer()
+  })
 
-  const { result, statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_OK)
-  t.is(result.id, player1.id)
+  test('destroy where /player?name=Baseball', async () => {
+    const { models: { Player } } = sequelize
+    const { player1, player2 } = instances
+    const url = `/player?name=${player1.name}`
+    const method = 'DELETE'
 
-  const deletedPlayer = await Player.findByPk(player1.id)
-  t.falsy(deletedPlayer)
-  const stillTherePlayer = await Player.findByPk(player2.id)
-  t.truthy(stillTherePlayer)
-})
+    const presentPlayer = await Player.findByPk(player1.id)
+    expect(presentPlayer).toBeTruthy()
 
-test('destroyAll where /players?name=Baseball', async (t) => {
-  const { server, instances, sequelize: { models: { Player } } } = t.context
-  const { player1, player2 } = instances
-  const url = `/players?name=${player1.name}`
-  const method = 'DELETE'
+    const { result, statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_OK)
+    expect(result.id).toBe(player1.id)
 
-  const presentPlayer = await Player.findByPk(player1.id)
-  t.truthy(presentPlayer)
+    const deletedPlayer = await Player.findByPk(player1.id)
+    expect(deletedPlayer).toBeNull()
+    const stillTherePlayer = await Player.findByPk(player2.id)
+    expect(stillTherePlayer).toBeTruthy()
+  })
 
-  const { result, statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_OK)
-  t.is(result.id, player1.id)
+  test('destroyAll where /players?name=Baseball', async () => {
+    const { models: { Player } } = sequelize
+    const { player1, player2 } = instances
+    const url = `/players?name=${player1.name}`
+    const method = 'DELETE'
 
-  const deletedPlayer = await Player.findByPk(player1.id)
-  t.falsy(deletedPlayer)
-  const stillTherePlayer = await Player.findByPk(player2.id)
-  t.truthy(stillTherePlayer)
-})
+    const presentPlayer = await Player.findByPk(player1.id)
+    expect(presentPlayer).toBeTruthy()
 
-test('destroyAll /players', async (t) => {
-  const { server, instances, sequelize: { models: { Player } } } = t.context
-  const { player1, player2 } = instances
-  const url = '/players'
-  const method = 'DELETE'
+    const { result, statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_OK)
+    expect(result.id).toBe(player1.id)
 
-  const presentPlayers = await Player.findAll()
-  const playerIds = presentPlayers.map(({ id }) => id)
-  t.truthy(playerIds.includes(player1.id))
-  t.truthy(playerIds.includes(player2.id))
+    const deletedPlayer = await Player.findByPk(player1.id)
+    expect(deletedPlayer).toBeNull()
+    const stillTherePlayer = await Player.findByPk(player2.id)
+    expect(stillTherePlayer).toBeTruthy()
+  })
 
-  const { result, statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_OK)
-  const resultPlayerIds = result.map(({ id }) => id)
-  t.truthy(resultPlayerIds.includes(player1.id))
-  t.truthy(resultPlayerIds.includes(player2.id))
+  test('destroyAll /players', async () => {
+    const { models: { Player } } = sequelize
+    const { player1, player2 } = instances
+    const url = '/players'
+    const method = 'DELETE'
 
-  const deletedPlayers = await Player.findAll()
-  t.is(deletedPlayers.length, 0)
-})
+    const presentPlayers = await Player.findAll()
+    const playerIds = presentPlayers.map(({ id }) => id)
+    expect(playerIds).toContain(player1.id)
+    expect(playerIds).toContain(player2.id)
 
-test('destroy not found /player/10', async (t) => {
-  const { server, instances, sequelize: { models: { Player } } } = t.context
-  const { player1, player2 } = instances
-  // this doesn't exist in our fixtures
-  const url = '/player/10'
-  const method = 'DELETE'
+    const { result, statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_OK)
+    const resultPlayerIds = result.map(({ id }) => id)
+    expect(resultPlayerIds).toContain(player1.id)
+    expect(resultPlayerIds).toContain(player2.id)
 
-  const presentPlayers = await Player.findAll()
-  const playerIds = presentPlayers.map(({ id }) => id)
-  t.truthy(playerIds.includes(player1.id))
-  t.truthy(playerIds.includes(player2.id))
+    const deletedPlayers = await Player.findAll()
+    expect(deletedPlayers.length).toBe(0)
+  })
 
-  const { statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_NOT_FOUND)
+  test('destroy not found /player/10', async () => {
+    const { models: { Player } } = sequelize
+    const { player1, player2 } = instances
+    // this doesn't exist in our fixtures
+    const url = '/player/10'
+    const method = 'DELETE'
 
-  const nonDeletedPlayers = await Player.findAll()
-  t.is(nonDeletedPlayers.length, presentPlayers.length)
-})
+    const presentPlayers = await Player.findAll()
+    const playerIds = presentPlayers.map(({ id }) => id)
+    expect(playerIds).toContain(player1.id)
+    expect(playerIds).toContain(player2.id)
 
-test('destroyAll not found /players?name=no', async (t) => {
-  const { server, instances, sequelize: { models: { Player } } } = t.context
-  const { player1, player2 } = instances
-  // this doesn't exist in our fixtures
-  const url = '/players?name=no'
-  const method = 'DELETE'
+    const { statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_NOT_FOUND)
 
-  const presentPlayers = await Player.findAll()
-  const playerIds = presentPlayers.map(({ id }) => id)
-  t.truthy(playerIds.includes(player1.id))
-  t.truthy(playerIds.includes(player2.id))
+    const nonDeletedPlayers = await Player.findAll()
+    expect(nonDeletedPlayers.length).toBe(presentPlayers.length)
+  })
 
-  const { statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_NOT_FOUND)
+  test('destroyAll not found /players?name=no', async () => {
+    const { models: { Player } } = sequelize
+    const { player1, player2 } = instances
+    // this doesn't exist in our fixtures
+    const url = '/players?name=no'
+    const method = 'DELETE'
 
-  const nonDeletedPlayers = await Player.findAll()
-  t.is(nonDeletedPlayers.length, presentPlayers.length)
-})
+    const presentPlayers = await Player.findAll()
+    const playerIds = presentPlayers.map(({ id }) => id)
+    expect(playerIds).toContain(player1.id)
+    expect(playerIds).toContain(player2.id)
 
-test('not found /notamodel', async (t) => {
-  const { server } = t.context
-  const url = '/notamodel'
-  const method = 'DELETE'
+    const { statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_NOT_FOUND)
 
-  const { statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_NOT_FOUND)
-})
+    const nonDeletedPlayers = await Player.findAll()
+    expect(nonDeletedPlayers.length).toBe(presentPlayers.length)
+  })
 
-test('destroyScope /players/returnsOne', async (t) => {
-  const { server, instances, sequelize: { models: { Player } } } = t.context
-  const { player1, player2 } = instances
-  // this doesn't exist in our fixtures
-  const url = '/players/returnsOne'
-  const method = 'DELETE'
+  test('not found /notamodel', async () => {
+    const url = '/notamodel'
+    const method = 'DELETE'
 
-  const presentPlayers = await Player.findAll()
-  const playerIds = presentPlayers.map(({ id }) => id)
-  t.truthy(playerIds.includes(player1.id))
-  t.truthy(playerIds.includes(player2.id))
+    const { statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_NOT_FOUND)
+  })
 
-  const { result, statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_OK)
-  t.is(result.id, player1.id)
+  test('destroyScope /players/returnsOne', async () => {
+    const { models: { Player } } = sequelize
+    const { player1, player2 } = instances
+    // this doesn't exist in our fixtures
+    const url = '/players/returnsOne'
+    const method = 'DELETE'
 
-  const nonDeletedPlayers = await Player.findAll()
-  t.is(nonDeletedPlayers.length, presentPlayers.length - 1)
-})
+    const presentPlayers = await Player.findAll()
+    const playerIds = presentPlayers.map(({ id }) => id)
+    expect(playerIds).toContain(player1.id)
+    expect(playerIds).toContain(player2.id)
 
-test('destroyScope /players/returnsNone', async (t) => {
-  const { server, instances, sequelize: { models: { Player } } } = t.context
-  const { player1, player2 } = instances
-  // this doesn't exist in our fixtures
-  const url = '/players/returnsNone'
-  const method = 'DELETE'
+    const { result, statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_OK)
+    expect(result.id).toBe(player1.id)
 
-  const presentPlayers = await Player.findAll()
-  const playerIds = presentPlayers.map(({ id }) => id)
-  t.truthy(playerIds.includes(player1.id))
-  t.truthy(playerIds.includes(player2.id))
+    const nonDeletedPlayers = await Player.findAll()
+    expect(nonDeletedPlayers.length).toBe(presentPlayers.length - 1)
+  })
 
-  const { statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_NOT_FOUND)
+  test('destroyScope /players/returnsNone', async () => {
+    const { models: { Player } } = sequelize
+    const { player1, player2 } = instances
+    // this doesn't exist in our fixtures
+    const url = '/players/returnsNone'
+    const method = 'DELETE'
 
-  const nonDeletedPlayers = await Player.findAll()
-  const nonDeletedPlayerIds = nonDeletedPlayers.map(({ id }) => id)
-  t.truthy(nonDeletedPlayerIds.includes(player1.id))
-  t.truthy(nonDeletedPlayerIds.includes(player2.id))
-})
+    const presentPlayers = await Player.findAll()
+    const playerIds = presentPlayers.map(({ id }) => id)
+    expect(playerIds).toContain(player1.id)
+    expect(playerIds).toContain(player2.id)
 
-test('destroyScope invalid scope /players/invalid', async (t) => {
-  const { server, instances, sequelize: { models: { Player } } } = t.context
-  const { player1, player2 } = instances
-  // this doesn't exist in our fixtures
-  const url = '/players/invalid'
-  const method = 'DELETE'
+    const { statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_NOT_FOUND)
 
-  const presentPlayers = await Player.findAll()
-  const playerIds = presentPlayers.map(({ id }) => id)
-  t.truthy(playerIds.includes(player1.id))
-  t.truthy(playerIds.includes(player2.id))
+    const nonDeletedPlayers = await Player.findAll()
+    const nonDeletedPlayerIds = nonDeletedPlayers.map(({ id }) => id)
+    expect(nonDeletedPlayerIds).toContain(player1.id)
+    expect(nonDeletedPlayerIds).toContain(player2.id)
+  })
 
-  const { statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_BAD_REQUEST)
+  test('destroyScope invalid scope /players/invalid', async () => {
+    const { models: { Player } } = sequelize
+    const { player1, player2 } = instances
+    // this doesn't exist in our fixtures
+    const url = '/players/invalid'
+    const method = 'DELETE'
 
-  const nonDeletedPlayers = await Player.findAll()
-  const nonDeletedPlayerIds = nonDeletedPlayers.map(({ id }) => id)
-  t.truthy(nonDeletedPlayerIds.includes(player1.id))
-  t.truthy(nonDeletedPlayerIds.includes(player2.id))
+    const presentPlayers = await Player.findAll()
+    const playerIds = presentPlayers.map(({ id }) => id)
+    expect(playerIds).toContain(player1.id)
+    expect(playerIds).toContain(player2.id)
+
+    const { statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_BAD_REQUEST)
+
+    const nonDeletedPlayers = await Player.findAll()
+    const nonDeletedPlayerIds = nonDeletedPlayers.map(({ id }) => id)
+    expect(nonDeletedPlayerIds).toContain(player1.id)
+    expect(nonDeletedPlayerIds).toContain(player2.id)
+  })
 })

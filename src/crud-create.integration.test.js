@@ -1,44 +1,54 @@
-import test from 'ava'
-import 'sinon-bluebird'
-const setup = require('../test/integration-setup.js')
+/* eslint-env jest */
 
-const STATUS_OK = 200
-const STATUS_NOT_FOUND = 404
-const STATUS_BAD_REQUEST = 400
+const { setupServer, setupModels, stopServer } = require('../test/integration-setup.js')()
 
-setup(test)
+describe('Test destroy', () => {
+  const STATUS_OK = 200
+  const STATUS_NOT_FOUND = 404
+  const STATUS_BAD_REQUEST = 400
 
-test('where /player {name: "Chard"}', async (t) => {
-  const { server, sequelize: { models: { Player } } } = t.context
-  const url = '/player'
-  const method = 'POST'
-  const payload = { name: 'Chard' }
+  let server
+  let sequelize
+  beforeEach(async () => {
+    server = await setupServer()
+    sequelize = server.plugins['hapi-sequelizejs'].db.sequelize
+    await setupModels()
+  })
 
-  const notPresentPlayer = await Player.findOne({ where: payload })
-  t.falsy(notPresentPlayer)
+  afterEach(() => {
+    stopServer()
+  })
 
-  const { result, statusCode } = await server.inject({ url, method, payload })
-  t.is(statusCode, STATUS_OK)
-  t.truthy(result.id)
-  t.is(result.name, payload.name)
-})
+  test('where /player {name: "Chard"}', async () => {
+    const { models: { Player } } = sequelize
+    const url = '/player'
+    const method = 'POST'
+    const payload = { name: 'Chard' }
 
-test('not found /notamodel {name: "Chard"}', async (t) => {
-  const { server } = t.context
-  const url = '/notamodel'
-  const method = 'POST'
-  const payload = { name: 'Chard' }
+    const notPresentPlayer = await Player.findOne({ where: payload })
+    expect(notPresentPlayer).toBeNull()
 
-  const { statusCode } = await server.inject({ url, method, payload })
-  t.is(statusCode, STATUS_NOT_FOUND)
-})
+    const { result, statusCode } = await server.inject({ url, method, payload })
+    expect(statusCode).toBe(STATUS_OK)
+    expect(result.id).toBeTruthy()
+    expect(result.name).toBe(payload.name)
+  })
 
-test('no payload /player/1', async (t) => {
-  const { server } = t.context
-  const url = '/player'
-  const method = 'POST'
+  test('not found /notamodel {name: "Chard"}', async () => {
+    const url = '/notamodel'
+    const method = 'POST'
+    const payload = { name: 'Chard' }
 
-  const response = await server.inject({ url, method })
-  const { statusCode } = response
-  t.is(statusCode, STATUS_BAD_REQUEST)
+    const { statusCode } = await server.inject({ url, method, payload })
+    expect(statusCode).toBe(STATUS_NOT_FOUND)
+  })
+
+  test('no payload /player/1', async () => {
+    const url = '/player'
+    const method = 'POST'
+
+    const response = await server.inject({ url, method })
+    const { statusCode } = response
+    expect(statusCode).toBe(STATUS_BAD_REQUEST)
+  })
 })

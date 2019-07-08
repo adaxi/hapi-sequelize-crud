@@ -1,95 +1,96 @@
-const test = require('ava')
-const setup = require('../test/integration-setup.js')
-require('sinon-bluebird')
+/* eslint-env jest */
 
-const STATUS_OK = 200
-const STATUS_NOT_FOUND = 404
+const { setupServer, setupModels, stopServer } = require('../test/integration-setup.js')()
 
-setup(test)
+describe('Test list limit and offset', () => {
+  const STATUS_OK = 200
+  const STATUS_NOT_FOUND = 404
 
-test('/players?limit=2', async (t) => {
-  const { server } = t.context
-  const limit = 2
-  const url = `/players?limit=${limit}`
-  const method = 'GET'
+  let server
+  beforeEach(async () => {
+    server = await setupServer()
+    await setupModels()
+  })
 
-  const { result, statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_OK)
-  t.is(result.length, limit)
-})
+  afterEach(() => {
+    stopServer()
+  })
 
-test('/players?limit=2&offset=1', async (t) => {
-  const { server } = t.context
-  const limit = 2
-  const url = `/players?limit=${limit}&offset=1`
-  const method = 'GET'
+  test('/players?limit=2', async () => {
+    const limit = 2
+    const url = `/players?limit=${limit}`
+    const method = 'GET'
 
-  const { result, statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_OK)
-  t.is(result.length, limit)
-})
+    const { result, statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_OK)
+    expect(result.length).toBe(limit)
+  })
 
-test('/players?limit=2&offset=2', async (t) => {
-  const { server } = t.context
-  const limit = 2
-  const url = `/players?limit=${limit}&offset=2`
-  const method = 'GET'
+  test('/players?limit=2&offset=1', async () => {
+    const limit = 2
+    const url = `/players?limit=${limit}&offset=1`
+    const method = 'GET'
 
-  const { result, statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_OK)
-  t.is(result.length, 1, 'with only 3 players, only get 1 back with an offset of 2')
-})
+    const { result, statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_OK)
+    expect(result.length).toBe(limit)
+  })
 
-test('/players?limit=2&offset=20', async (t) => {
-  const { server } = t.context
-  const limit = 2
-  const url = `/players?limit=${limit}&offset=20`
-  const method = 'GET'
+  test('/players?limit=2&offset=2', async () => {
+    const limit = 2
+    const url = `/players?limit=${limit}&offset=2`
+    const method = 'GET'
 
-  const res = await server.inject({ url, method })
-  const { statusCode } = res
-  t.is(statusCode, STATUS_NOT_FOUND, 'with a offset/limit greater than the data, returns a 404')
-})
+    const { result, statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_OK)
+    expect(result.length).toBe(1)
+  })
 
-test('scope /players/returnsAll?limit=2', async (t) => {
-  const { server } = t.context
-  const limit = 2
-  const url = `/players/returnsAll?limit=${limit}`
-  const method = 'GET'
+  test('/players?limit=2&offset=20', async () => {
+    const limit = 2
+    const url = `/players?limit=${limit}&offset=20`
+    const method = 'GET'
 
-  const { result, statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_OK)
-  t.is(result.length, limit)
-})
+    const { statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_NOT_FOUND)
+  })
 
-test('scope /players/returnsAll?limit=2&offset=1', async (t) => {
-  const { server } = t.context
-  const limit = 2
-  const url = `/players/returnsAll?limit=${limit}&offset=1`
-  const method = 'GET'
+  test('scope /players/returnsAll?limit=2', async () => {
+    const limit = 2
+    const url = `/players/returnsAll?limit=${limit}`
+    const method = 'GET'
 
-  const { result, statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_OK)
-  t.is(result.length, limit)
-})
+    const { result, statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_OK)
+    expect(result.length).toBe(limit)
+  })
 
-test('scope /players/returnsAll?limit=2&offset=2', async (t) => {
-  const { server } = t.context
-  const limit = 2
-  const url = `/players/returnsAll?limit=${limit}&offset=2`
-  const method = 'GET'
+  test('scope /players/returnsAll?limit=2&offset=1', async () => {
+    const limit = 2
+    const url = `/players/returnsAll?limit=${limit}&offset=1`
+    const method = 'GET'
 
-  const { result, statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_OK)
-  t.is(result.length, 1, 'with only 3 players, only get 1 back with an offset of 2')
-})
+    const { result, statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_OK)
+    expect(result.length).toBe(limit)
+  })
 
-test('scope /players/returnsAll?limit=2&offset=20', async (t) => {
-  const { server } = t.context
-  const limit = 2
-  const url = `/players/returnsAll?limit=${limit}&offset=20`
-  const method = 'GET'
+  test('scope /players/returnsAll?limit=2&offset=2', async () => {
+    const limit = 2
+    const url = `/players/returnsAll?limit=${limit}&offset=2`
+    const method = 'GET'
 
-  const { statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_NOT_FOUND, 'with a offset/limit greater than the data, returns a 404')
+    const { result, statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_OK)
+    expect(result.length).toBe(1)
+  })
+
+  test('scope /players/returnsAll?limit=2&offset=20', async () => {
+    const limit = 2
+    const url = `/players/returnsAll?limit=${limit}&offset=20`
+    const method = 'GET'
+
+    const { statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_NOT_FOUND)
+  })
 })
