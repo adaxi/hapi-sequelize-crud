@@ -9,7 +9,8 @@
     }
   },
   "scripts": {
-    "test": "standard && jest"
+    "test": "standard && jest",
+    "coverage": "jest --collectCoverage=true"
   },
   "repository": {
     "git": "https://github.com/adaxi/hapi-sequelize-crud"
