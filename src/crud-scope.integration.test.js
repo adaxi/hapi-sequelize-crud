@@ -1,40 +1,48 @@
-const test = require('ava')
-const setup = require('../test/integration-setup.js')
-require('sinon-bluebird')
+/* eslint-env jest */
 
-const STATUS_OK = 200
-const STATUS_NOT_FOUND = 404
-const STATUS_BAD_REQUEST = 400
+const { setupServer, setupModels, stopServer } = require('../test/integration-setup.js')()
 
-setup(test)
+describe('Test scope', () => {
+  const STATUS_OK = 200
+  const STATUS_NOT_FOUND = 404
+  const STATUS_BAD_REQUEST = 400
 
-test('/players/returnsOne', async (t) => {
-  const { server, instances } = t.context
-  const { player1 } = instances
-  const url = '/players/returnsOne'
-  const method = 'GET'
+  let server
+  let instances
+  beforeEach(async () => {
+    server = await setupServer()
+    instances = await setupModels()
+  })
 
-  const { result, statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_OK)
-  t.is(result.length, 1)
-  t.truthy(result[0].id, player1.id)
-})
+  afterEach(() => {
+    stopServer()
+  })
 
-test('/players/returnsNone', async (t) => {
-  const { server } = t.context
-  const url = '/players/returnsNone'
-  const method = 'GET'
+  test('/players/returnsOne', async () => {
+    const { player1 } = instances
+    const url = '/players/returnsOne'
+    const method = 'GET'
 
-  const { statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_NOT_FOUND)
-})
+    const { result, statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_OK)
+    expect(result.length).toBe(1)
+    expect(result[0].id).toBe(player1.id)
+  })
 
-test('invalid scope /players/invalid', async (t) => {
-  const { server } = t.context
-  // this doesn't exist in our fixtures
-  const url = '/players/invalid'
-  const method = 'GET'
+  test('/players/returnsNone', async () => {
+    const url = '/players/returnsNone'
+    const method = 'GET'
 
-  const { statusCode } = await server.inject({ url, method })
-  t.is(statusCode, STATUS_BAD_REQUEST)
+    const { statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_NOT_FOUND)
+  })
+
+  test('invalid scope /players/invalid', async () => {
+    // this doesn't exist in our fixtures
+    const url = '/players/invalid'
+    const method = 'GET'
+
+    const { statusCode } = await server.inject({ url, method })
+    expect(statusCode).toBe(STATUS_BAD_REQUEST)
+  })
 })

@@ -2,7 +2,7 @@
 
 const { setupServer, setupModels, stopServer } = require('../test/integration-setup.js')()
 
-describe('Test destroy', () => {
+describe('Test create', () => {
   const STATUS_OK = 200
   const STATUS_NOT_FOUND = 404
   const STATUS_BAD_REQUEST = 400

@@ -80,7 +80,9 @@ const parseOrderArray = (order, models) => {
       column = requestColumn
     }
 
-    if (column.model) column.model = models[column.model]
+    if (column.model) {
+      column.model = models[column.model]
+    }
 
     return column
   })

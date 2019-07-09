@@ -1,211 +1,127 @@
-const test = require('ava')
+
+/* eslint-env jest */
+
 const { list } = require('./crud.js')
 const { stub } = require('sinon')
 const uniqueId = require('lodash/uniqueId.js')
 require('sinon-bluebird')
 
-const METHODS = {
-  GET: 'GET'
-}
-
-test.beforeEach('setup server', (t) => {
-  t.context.server = {
-    route: stub()
-  }
-})
-
-const makeModel = () => {
-  const id = uniqueId()
-  return {
-    findAll: stub(),
-    _plural: 'models',
-    _singular: 'model',
-    toJSON: () => ({ id }),
-    id
-  }
-}
-
-test.beforeEach('setup model', (t) => {
-  t.context.model = makeModel()
-})
-
-test.beforeEach('setup models', (t) => {
-  t.context.models = [t.context.model, makeModel()]
-})
-
-test.beforeEach('setup request stub', (t) => {
-  t.context.request = {
-    query: {},
-    payload: {},
-    models: t.context.models
-  }
-})
-
-test.beforeEach('setup reply stub', (t) => {
-  t.context.reply = stub()
-})
-
-test('crud#list without prefix', (t) => {
-  const { server, model } = t.context
-
-  list({ server, model })
-  const { path } = server.route.args[0][0]
-
-  t.falsy(
-    path.includes('undefined'),
-    'correctly sets the path without a prefix defined'
-  )
-
-  t.is(
-    path,
-    `/${model._plural}`,
-    'the path sets to the plural model'
-  )
-})
-
-test('crud#list with prefix', (t) => {
-  const { server, model } = t.context
-  const prefix = '/v1'
-
-  list({ server, model, prefix })
-  const { path } = server.route.args[0][0]
-
-  t.is(
-    path,
-    `${prefix}/${model._plural}`,
-    'the path sets to the plural model with the prefix'
-  )
-})
-
-test('crud#list method', (t) => {
-  const { server, model } = t.context
-
-  list({ server, model })
-  const { method } = server.route.args[0][0]
-
-  t.is(
-    method,
-    METHODS.GET,
-    `sets the method to ${METHODS.GET}`
-  )
-})
-
-test('crud#list config', (t) => {
-  const { server, model } = t.context
-  const userConfig = {}
-
-  list({ server, model, config: userConfig })
-  const { config } = server.route.args[0][0]
-
-  t.is(
-    config,
-    userConfig,
-    'sets the user config'
-  )
-})
-
-test('crud#list handler', async (t) => {
-  const { server, model, request, reply, models } = t.context
-
-  list({ server, model })
-  const { handler } = server.route.args[0][0]
-  model.findAll.resolves(models)
-
-  let response
-  try {
-    response = await handler(request, reply)
-  } catch (e) {
-    t.ifError(e, 'does not error while handling')
-  } finally {
-    t.pass('does not error while handling')
+describe('Test include', () => {
+  const methods = {
+    GET: 'GET'
   }
 
-  t.falsy(response instanceof Error, response)
+  let server
+  let model
+  let models
+  let request
+  let h
 
-  t.deepEqual(
-    response,
-    models.map(({ id }) => ({ id })),
-    'responds with the list of models'
-  )
-})
+  beforeEach(() => {
+    server = { route: stub() }
+    models = [makeModel(), makeModel()]
+    model = models[0]
+    request = {
+      query: {},
+      payload: {},
+      models
+    }
+    h = jest.fn()
+  })
 
-test('crud#list handler if parseInclude errors', async (t) => {
-  const { server, model, request, reply } = t.context
-  // we _want_ the error
-  delete request.models
-
-  list({ server, model })
-  const { handler } = server.route.args[0][0]
-
-  try {
-    await handler(request, reply)
-    t.fail('should fail')
-  } catch (err) {
-    t.truthy(
-      err.isBoom,
-      'responds with a Boom error'
-    )
-  }
-})
-
-test('crud#list handler with limit', async (t) => {
-  const { server, model, request, reply, models } = t.context
-  const { findAll } = model
-
-  // set the limit
-  request.query.limit = 1
-
-  list({ server, model })
-  const { handler } = server.route.args[0][0]
-  model.findAll.resolves(models)
-
-  let response
-  try {
-    response = await handler(request, reply)
-  } catch (e) {
-    t.ifError(e, 'does not error while handling')
-  } finally {
-    t.pass('does not error while handling')
+  const makeModel = () => {
+    const id = uniqueId()
+    return {
+      id,
+      findAll: stub(),
+      _plural: 'models',
+      _singular: 'model',
+      toJSON: () => ({ id })
+    }
   }
 
-  const findAllArgs = findAll.args[0][0]
+  test('crud#list without prefix', () => {
+    list({ server, model })
+    const { path } = server.route.args[0][0]
+    expect(path).not.toContain('undefined') // correctly sets the path without a prefix defined
+    expect(path).toEqual(`/${model._plural}`)
+  })
 
-  t.falsy(response instanceof Error, response)
+  test('crud#list with prefix', () => {
+    const prefix = '/v1'
+    list({ server, model, prefix })
+    const { path } = server.route.args[0][0]
+    expect(path).toEqual(`${prefix}/${model._plural}`)
+  })
 
-  t.is(
-    findAllArgs.limit,
-    request.query.limit,
-    'queries with the limit'
-  )
-})
+  test('crud#list method', () => {
+    list({ server, model })
+    const { method } = server.route.args[0][0]
+    expect(method).toEqual(methods.GET)
+  })
 
-test('crud#list handler with order', async (t) => {
-  const { server, model, request, reply, models } = t.context
-  const { findAll } = model
+  test('crud#list config', () => {
+    const userConfig = {}
+    list({ server, model, config: userConfig })
+    const { config } = server.route.args[0][0]
+    expect(config).toEqual(userConfig)
+  })
 
-  // set the limit
-  request.query.order = 'key'
+  test('crud#list handler', async () => {
+    list({ server, model })
+    const { handler } = server.route.args[0][0]
+    model.findAll.resolves(models)
+    const response = await handler(request, h)
+    expect(response).not.toBeInstanceOf(Error)
+    expect(response).toEqual(models.map(({ id }) => ({ id })))
+  })
 
-  list({ server, model })
-  const { handler } = server.route.args[0][0]
-  model.findAll.resolves(models)
+  test('crud#list handler if parseInclude errors', async () => {
+    // we _want_ the error
+    delete request.models
 
-  let response
-  try {
-    response = await handler(request, reply)
-  } catch (e) {
-    t.ifError(e, 'does not error while handling')
-  } finally {
-    t.pass('does not error while handling')
-  }
+    list({ server, model })
+    const { handler } = server.route.args[0][0]
 
-  const findAllArgs = findAll.args[0][0]
+    try {
+      await handler(request, h)
+      expect(true).toBe(false)
+    } catch (err) {
+      expect(err.isBoom).toBe(true)
+    }
+  })
 
-  t.falsy(response instanceof Error, response)
+  test('crud#list handler with limit', async () => {
+    const { findAll } = model
 
-  t.deepEqual(
-    findAllArgs.order,
-    [[request.query.order]],
-    'queries with the order as an array b/c that\'s what sequelize wants'
-  )
+    // set the limit
+    request.query.limit = 1
+
+    list({ server, model })
+    const { handler } = server.route.args[0][0]
+    model.findAll.resolves(models)
+
+    let response = await handler(request, h)
+    const findAllArgs = findAll.args[0][0]
+
+    expect(response).not.toBeInstanceOf(Error)
+    expect(findAllArgs.limit).toBe(request.query.limit)
+  })
+
+  test('crud#list handler with order', async () => {
+    const { findAll } = model
+
+    // set the limit
+    request.query.order = 'key'
+
+    list({ server, model })
+    const { handler } = server.route.args[0][0]
+    model.findAll.resolves(models)
+
+    let response = await handler(request, h)
+    const findAllArgs = findAll.args[0][0]
+
+    expect(response).not.toBeInstanceOf(Error)
+    expect(findAllArgs.order).toStrictEqual([[request.query.order]])
+  })
 })
