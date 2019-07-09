@@ -1,13 +1,13 @@
-machine:
-  node:
-    version: 6.9.0
-
-dependencies:
-  pre:
-    - npm prune
-  post:
-    - mkdir -p $CIRCLE_TEST_REPORTS/ava
-
-test:
-  post:
-    - npm run coverage
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/node:10.0-browsers
+    steps:
+      - checkout
+      - run: npm install
+      - run:
+          name: "Run Jest and Collect Coverage Reports"
+          command: jest --collectCoverage=true
+      - store_artifacts:
+          path: coverage
