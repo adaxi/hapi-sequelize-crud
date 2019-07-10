@@ -1,10 +1,11 @@
 
 /* eslint-env jest */
 
+const Crypto = require('crypto')
 const { list } = require('./crud.js')
 const { stub } = require('sinon')
-const uniqueId = require('lodash/uniqueId.js')
-require('sinon-bluebird')
+
+const generateId = () => Crypto.randomBytes(16).toString('hex')
 
 describe('Test include', () => {
   const methods = {
@@ -30,7 +31,7 @@ describe('Test include', () => {
   })
 
   const makeModel = () => {
-    const id = uniqueId()
+    const id = generateId()
     return {
       id,
       findAll: stub(),
