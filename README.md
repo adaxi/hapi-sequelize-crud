@@ -1,7 +1,7 @@
 hapi-sequelize-crud
 ===================
 
-[![CircleCI](https://circleci.com/gh/adaxi/hapi-sequelize-crud.svg?style=svg)](https://circleci.com/gh/adaxi/hapi-sequelize-crud)
+![CircleCI](https://img.shields.io/circleci/build/github/adaxi/hapi-sequelize-crud.svg)
 
 Automatically generate a RESTful API for your models and associations
 
