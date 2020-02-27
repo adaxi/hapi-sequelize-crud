@@ -30,7 +30,7 @@ associations(models); // pretend this function defines our associations
 
 // Now, register hapi-sequelize-crud
 await register({
-  register: require('hapi-sequelize-crud'),
+  plugin: require('hapi-sequelize-crud'),
   options: {
     prefix: '/v1',
     name: 'db', // the same name you used for configuring `hapi-sequelize` (options.name)
