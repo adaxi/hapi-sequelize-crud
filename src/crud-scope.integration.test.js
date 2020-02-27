@@ -9,14 +9,16 @@ describe('Test scope', () => {
 
   let server
   let instances
+  let sequelize
+
   beforeEach(async () => {
-    server = await setupServer()
-    instances = await setupModels()
+    const { server: _server, sequelize: _sequelize } = await setupServer()
+    server = _server
+    sequelize = _sequelize
+    instances = await setupModels(sequelize)
   })
 
-  afterEach(() => {
-    stopServer()
-  })
+  afterEach(() => stopServer(server))
 
   test('/players/returnsOne', async () => {
     const { player1 } = instances

@@ -5,9 +5,13 @@ const { Op } = require('sequelize')
 // if the custom validation is a joi object we need to concat
 // else, assume it's an plain object and we can just add it in with .keys
 const concatToJoiObject = (joi, candidate) => {
-  if (!candidate) return joi
-  else if (candidate.isJoi) return joi.concat(candidate)
-  else return joi.keys(candidate)
+  if (!candidate) {
+    return joi
+  } else if (Joi.isSchema(candidate)) {
+    return joi.concat(candidate)
+  } else {
+    return joi.keys(candidate)
+  }
 }
 
 const sequelizeOperators = {
@@ -72,7 +76,7 @@ const restrictMethods = [
 ]
 
 const getConfigForMethod = ({
-  method, attributeValidation, associationValidation, scopes = [], config = {}
+  method, attributeValidation, associationValidation, scopes = [], options = {}
 }) => {
   const hasWhere = whereMethods.includes(method)
   const hasInclude = includeMethods.includes(method)
@@ -81,7 +85,7 @@ const getConfigForMethod = ({
   const hasIdParams = idParamsMethods.includes(method)
   const hasRestrictMethods = restrictMethods.includes(method)
   // clone the config so we don't modify it on multiple passes.
-  let methodConfig = { ...config, validate: { ...config.validate } }
+  let methodConfig = { ...options, validate: { ...options.validate } }
 
   if (hasWhere) {
     const query = concatToJoiObject(Joi.object()

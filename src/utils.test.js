@@ -36,13 +36,13 @@ describe('Test utilites', () => {
   test('parseOrder returns order when a string', () => {
     const order = 'thing'
     request.query = { order: order, thing: 'hi' }
-    expect(parseOrder(request)).toEqual([ [ order ] ])
+    expect(parseOrder(request)).toEqual([[order]])
   })
 
   test('parseOrder returns order when json', () => {
-    request.query.order = [ JSON.stringify({ model: 'User' }), 'DESC' ]
+    request.query.order = [JSON.stringify({ model: 'User' }), 'DESC']
     request.query.thing = 'hi'
-    expect(parseOrder(request)).toEqual([ { model: models.User }, 'DESC' ])
+    expect(parseOrder(request)).toEqual([{ model: models.User }, 'DESC'])
   })
 
   test('parseOrder returns null when not defined', () => {

@@ -2,12 +2,12 @@ const { getMethod } = require('../utils')
 const SequelizeErrorHandler = require('../sequelize-error-handler')
 
 let prefix
-let defaultConfig
+let defaultOptions
 
 module.exports = {
   associate: (server, a, b, names, options) => {
     prefix = options.prefix
-    defaultConfig = options.defaultConfig
+    defaultOptions = options.defaultOptions
 
     server.route({
       method: 'GET',
@@ -36,7 +36,7 @@ module.exports = {
           SequelizeErrorHandler(err)
         }
       },
-      config: defaultConfig
+      options: defaultOptions
     })
   }
 }

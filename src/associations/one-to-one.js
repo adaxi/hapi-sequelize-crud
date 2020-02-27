@@ -2,11 +2,11 @@ const SequelizeErrorHandler = require('../sequelize-error-handler')
 const { parseInclude, parseWhere, getMethod } = require('../utils')
 
 let prefix
-let defaultConfig
+let defaultOptions
 
 const oneToOne = (server, a, b, names, options) => {
   prefix = options.prefix
-  defaultConfig = options.defaultConfig
+  defaultOptions = options.defaultOptions
 
   get(server, a, b, names)
   create(server, a, b, names)
@@ -42,7 +42,7 @@ const get = (server, a, b, names) => {
         SequelizeErrorHandler(err)
       }
     },
-    config: defaultConfig
+    options: defaultOptions
   })
 }
 
@@ -68,7 +68,7 @@ const create = (server, a, b, names) => {
       }
     },
 
-    config: defaultConfig
+    options: defaultOptions
   })
 }
 
@@ -100,7 +100,7 @@ const destroy = (server, a, b, names) => {
       }
     },
 
-    config: defaultConfig
+    options: defaultOptions
   })
 }
 
@@ -132,7 +132,7 @@ const update = (server, a, b, names) => {
         SequelizeErrorHandler(err)
       }
     },
-    config: defaultConfig
+    options: defaultOptions
   })
 }
 

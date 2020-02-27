@@ -12,7 +12,7 @@ const createAll = ({
   server,
   model,
   prefix,
-  config,
+  options,
   attributeValidation,
   associationValidation,
   scopes
@@ -22,11 +22,11 @@ const createAll = ({
       server,
       model,
       prefix,
-      config: getConfigForMethod({
+      options: getConfigForMethod({
         method,
         attributeValidation,
         associationValidation,
-        config,
+        options,
         scopes
       })
     })
@@ -51,7 +51,7 @@ models: {
 
 */
 
-const crud = (server, model, { prefix, defaultConfig: config, models: permissions }) => {
+const crud = (server, model, { prefix, defaultOptions: options, models: permissions }) => {
   const modelName = model._singular
   const modelAttributes = Object.keys(model.rawAttributes)
   const associatedModelNames = Object.keys(model.associations)
@@ -85,7 +85,7 @@ const crud = (server, model, { prefix, defaultConfig: config, models: permission
       server,
       model,
       prefix,
-      config,
+      options,
       attributeValidation,
       associationValidation,
       scopes
@@ -100,7 +100,7 @@ const crud = (server, model, { prefix, defaultConfig: config, models: permission
       server,
       model,
       prefix,
-      config,
+      options,
       attributeValidation,
       associationValidation,
       scopes
@@ -113,7 +113,7 @@ const crud = (server, model, { prefix, defaultConfig: config, models: permission
 
     permissionOptions.forEach((permissionOption) => {
       if (_.isPlainObject(permissionOption)) {
-        const permissionConfig = permissionOption.config || config
+        const permissionConfig = permissionOption.options || options
 
         if (permissionOption.methods) {
           permissionOption.methods.forEach((method) => {
@@ -121,12 +121,12 @@ const crud = (server, model, { prefix, defaultConfig: config, models: permission
               server,
               model,
               prefix,
-              config: getConfigForMethod({
+              options: getConfigForMethod({
                 method,
                 attributeValidation,
                 associationValidation,
                 scopes,
-                config: permissionConfig
+                options: permissionConfig
               })
             })
           })
@@ -138,7 +138,7 @@ const crud = (server, model, { prefix, defaultConfig: config, models: permission
             attributeValidation,
             associationValidation,
             scopes,
-            config: permissionConfig
+            options: permissionConfig
           })
         }
       }
@@ -146,7 +146,7 @@ const crud = (server, model, { prefix, defaultConfig: config, models: permission
   }
 }
 
-const list = ({ server, model, prefix = '/', config }) => {
+const list = ({ server, model, prefix = '/', options }) => {
   server.route({
     method: 'GET',
     path: Path.join(prefix, model._plural),
@@ -170,11 +170,11 @@ const list = ({ server, model, prefix = '/', config }) => {
       }
     },
 
-    config
+    options
   })
 }
 
-const get = ({ server, model, prefix = '/', config }) => {
+const get = ({ server, model, prefix = '/', options }) => {
   server.route({
     method: 'GET',
     path: Path.join(prefix, model._singular, '{id?}'),
@@ -188,7 +188,7 @@ const get = ({ server, model, prefix = '/', config }) => {
         const instance = await model.findOne({ where, include })
 
         if (!instance) {
-          throw notFound(id ? `${id} not found.` : `Nothing found.`)
+          throw notFound(id ? `${id} not found.` : 'Nothing found.')
         }
 
         return instance.toJSON()
@@ -196,11 +196,11 @@ const get = ({ server, model, prefix = '/', config }) => {
         SequelizeErrorHandler(err)
       }
     },
-    config
+    options
   })
 }
 
-const scope = ({ server, model, prefix = '/', config }) => {
+const scope = ({ server, model, prefix = '/', options }) => {
   server.route({
     method: 'GET',
     path: Path.join(prefix, model._plural, '{scope}'),
@@ -229,11 +229,11 @@ const scope = ({ server, model, prefix = '/', config }) => {
         SequelizeErrorHandler(err)
       }
     },
-    config
+    options
   })
 }
 
-const create = ({ server, model, prefix = '/', config }) => {
+const create = ({ server, model, prefix = '/', options }) => {
   server.route({
     method: 'POST',
     path: Path.join(prefix, model._singular),
@@ -245,11 +245,11 @@ const create = ({ server, model, prefix = '/', config }) => {
         SequelizeErrorHandler(err)
       }
     },
-    config
+    options
   })
 }
 
-const destroy = ({ server, model, prefix = '/', config }) => {
+const destroy = ({ server, model, prefix = '/', options }) => {
   server.route({
     method: 'DELETE',
     path: Path.join(prefix, model._singular, '{id?}'),
@@ -274,11 +274,11 @@ const destroy = ({ server, model, prefix = '/', config }) => {
         SequelizeErrorHandler(err)
       }
     },
-    config
+    options
   })
 }
 
-const destroyAll = ({ server, model, prefix = '/', config }) => {
+const destroyAll = ({ server, model, prefix = '/', options }) => {
   server.route({
     method: 'DELETE',
     path: Path.join(prefix, model._plural),
@@ -302,11 +302,11 @@ const destroyAll = ({ server, model, prefix = '/', config }) => {
       }
     },
 
-    config
+    options
   })
 }
 
-const destroyScope = ({ server, model, prefix = '/', config }) => {
+const destroyScope = ({ server, model, prefix = '/', options }) => {
   server.route({
     method: 'DELETE',
     path: Path.join(prefix, model._plural, '{scope}'),
@@ -333,11 +333,11 @@ const destroyScope = ({ server, model, prefix = '/', config }) => {
         SequelizeErrorHandler(err)
       }
     },
-    config
+    options
   })
 }
 
-const update = ({ server, model, prefix = '/', config }) => {
+const update = ({ server, model, prefix = '/', options }) => {
   server.route({
     method: 'PUT',
     path: Path.join(prefix, model._singular, '{id}'),
@@ -359,7 +359,7 @@ const update = ({ server, model, prefix = '/', config }) => {
       }
     },
 
-    config
+    options
   })
 }
 

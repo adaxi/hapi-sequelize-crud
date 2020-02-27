@@ -62,10 +62,10 @@ describe('Test include', () => {
   })
 
   test('crud#list config', () => {
-    const userConfig = {}
-    list({ server, model, config: userConfig })
-    const { config } = server.route.args[0][0]
-    expect(config).toEqual(userConfig)
+    const userOptions = {}
+    list({ server, model, options: userOptions })
+    const { options } = server.route.args[0][0]
+    expect(options).toEqual(userOptions)
   })
 
   test('crud#list handler', async () => {
@@ -102,7 +102,7 @@ describe('Test include', () => {
     const { handler } = server.route.args[0][0]
     model.findAll.resolves(models)
 
-    let response = await handler(request, h)
+    const response = await handler(request, h)
     const findAllArgs = findAll.args[0][0]
 
     expect(response).not.toBeInstanceOf(Error)
@@ -119,7 +119,7 @@ describe('Test include', () => {
     const { handler } = server.route.args[0][0]
     model.findAll.resolves(models)
 
-    let response = await handler(request, h)
+    const response = await handler(request, h)
     const findAllArgs = findAll.args[0][0]
 
     expect(response).not.toBeInstanceOf(Error)

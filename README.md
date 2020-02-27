@@ -1,15 +1,15 @@
 hapi-sequelize-crud
 ===================
 
-![CircleCI](https://img.shields.io/circleci/build/github/adaxi/hapi-sequelize-crud.svg)
-
 Automatically generate a RESTful API for your models and associations
 
-This plugin depends on [`hapi-sequelize`](https://github.com/danecando/hapi-sequelize).
+This plugin depends on [`hapi-sequelizejs`](https://github.com/danecando/hapi-sequelizejs).
 
 ```
-npm install -S hapi-sequelize-crud
+npm install --save hapi-sequelize-crud
 ```
+
+Supports @hapi/hapi v19 and sequelize v5.
 
 ## Configure
 
@@ -34,7 +34,7 @@ await register({
   options: {
     prefix: '/v1',
     name: 'db', // the same name you used for configuring `hapi-sequelize` (options.name)
-    defaultConfig: { ... }, // passed as `config` to all routes created
+    defaultOptions: { ... }, // passed as `options` to all routes created
 
     // You can specify which models must have routes defined for using the
     // `models` property. If you omit this property, all models will have
@@ -51,8 +51,8 @@ await register({
       // the cow model also has all methods enabled
       'cow',
       // the bat model as a custom config for the list method, but uses the default config for create.
-      // `config` if provided, overrides the default config
-      {model: 'bat', methods: ['list'], config: { ... }},
+      // `options` if provided, overrides the default config
+      {model: 'bat', methods: ['list'], options: { ... }},
       {model: 'bat', methods: ['create']}
       {model: 'fly', config: {
         // interact with the request before hapi-sequelize-crud does

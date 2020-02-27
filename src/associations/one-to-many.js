@@ -5,11 +5,11 @@ const SequelizeErrorHandler = require('../sequelize-error-handler')
 const { parseInclude, parseWhere, getMethod } = require('../utils')
 
 let prefix
-let defaultConfig
+let defaultOptions
 
 const oneToMany = (server, a, b, names, options) => {
   prefix = options.prefix
-  defaultConfig = options.defaultConfig
+  defaultOptions = options.defaultOptions
 
   get(server, a, b, names)
   list(server, a, b, names)
@@ -37,10 +37,12 @@ const get = (server, a, b, names) => {
 
         const method = getMethod(base, names.b)
 
-        const list = await method({ where: {
-          [b.primaryKeyField]: request.params.bid
-        },
-        include })
+        const list = await method({
+          where: {
+            [b.primaryKeyField]: request.params.bid
+          },
+          include
+        })
 
         if (Array.isArray(list)) {
           return list[0]
@@ -51,7 +53,7 @@ const get = (server, a, b, names) => {
         SequelizeErrorHandler(err)
       }
     },
-    config: defaultConfig
+    options: defaultOptions
   })
 }
 
@@ -79,7 +81,7 @@ const list = (server, a, b, names) => {
         SequelizeErrorHandler(err)
       }
     },
-    config: defaultConfig
+    options: defaultOptions
   })
 }
 
@@ -113,14 +115,14 @@ const scope = (server, a, b, names) => {
         SequelizeErrorHandler(err)
       }
     },
-    config: _.defaultsDeep({
+    options: _.defaultsDeep({
       validate: {
         params: Joi.object().keys({
           scope: Joi.string().valid(...scopes),
           aid: Joi.number().integer().required()
         })
       }
-    }, defaultConfig)
+    }, defaultOptions)
   })
 }
 
@@ -151,14 +153,14 @@ const scopeScope = (server, a, b, names) => {
         throw SequelizeErrorHandler(err)
       }
     },
-    config: _.defaultsDeep({
+    options: _.defaultsDeep({
       validate: {
         params: Joi.object().keys({
           scopea: Joi.string().valid(...scopes.a),
           scopeb: Joi.string().valid(...scopes.b)
         })
       }
-    }, defaultConfig)
+    }, defaultOptions)
   })
 }
 
@@ -226,14 +228,14 @@ const destroyScope = (server, a, b, names) => {
       }
     },
 
-    config: _.defaultsDeep({
+    options: _.defaultsDeep({
       validate: {
         params: Joi.object().keys({
           scope: Joi.string().valid(...scopes),
           aid: Joi.number().integer().required()
         })
       }
-    }, defaultConfig)
+    }, defaultOptions)
   })
 }
 
@@ -263,7 +265,7 @@ const update = (server, a, b, names) => {
         SequelizeErrorHandler(err)
       }
     },
-    config: defaultConfig
+    options: defaultOptions
   })
 }
 

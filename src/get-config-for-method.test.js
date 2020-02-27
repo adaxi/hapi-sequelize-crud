@@ -14,7 +14,7 @@ const {
 
 let models
 let scopes
-let config
+let options
 let attributeValidation
 let associationValidation
 
@@ -22,10 +22,10 @@ describe('Test route configuration', () => {
   beforeEach(() => {
     models = ['MyModel']
     scopes = ['aScope']
-    config = { cors: {} }
+    options = { cors: {} }
     attributeValidation = { myKey: Joi.any() }
     associationValidation = {
-      include: Joi.array().items(Joi.string().valid(models))
+      include: Joi.array().items(Joi.string().valid(...models))
     }
   })
 
@@ -35,7 +35,7 @@ describe('Test route configuration', () => {
       const { query } = configForMethod.validate
       expect(query).toBeTruthy()
       Object.keys(sequelizeOperators).forEach((operator) => {
-        expect(query.validate({ [operator]: true }).error).toBeNull()
+        expect(query.validate({ [operator]: true }).error).toBeUndefined()
       })
       expect(query.validate({ notAThing: true }).error).toBeTruthy()
     })
@@ -47,14 +47,14 @@ describe('Test route configuration', () => {
       const { query } = configForMethod.validate
 
       Object.keys(attributeValidation).forEach((key) => {
-        expect(query.validate({ [key]: true }).error).toBeNull()
+        expect(query.validate({ [key]: true }).error).toBeUndefined()
       })
       expect(query.validate({ notAThing: true }).error).toBeTruthy()
     })
   })
 
   test('query attributeValidation w/ config as plain object', () => {
-    const config = {
+    const options = {
       validate: {
         query: {
           aKey: Joi.boolean()
@@ -66,17 +66,17 @@ describe('Test route configuration', () => {
       const configForMethod = getConfigForMethod({
         method,
         attributeValidation,
-        config
+        options
       })
       const { query } = configForMethod.validate
 
       const keys = [
         ...Object.keys(attributeValidation),
-        ...Object.keys(config.validate.query)
+        ...Object.keys(options.validate.query)
       ]
 
       keys.forEach((key) => {
-        expect(query.validate({ [key]: true }).error).toBeNull()
+        expect(query.validate({ [key]: true }).error).toBeUndefined()
       })
 
       expect(query.validate({ notAThing: true }).error).toBeTruthy()
@@ -87,7 +87,7 @@ describe('Test route configuration', () => {
     const queryKeys = {
       aKey: Joi.boolean()
     }
-    const config = {
+    const options = {
       validate: {
         query: Joi.object().keys(queryKeys)
       }
@@ -97,7 +97,7 @@ describe('Test route configuration', () => {
       const configForMethod = getConfigForMethod({
         method,
         attributeValidation,
-        config
+        options
       })
       const { query } = configForMethod.validate
 
@@ -107,7 +107,7 @@ describe('Test route configuration', () => {
       ]
 
       keys.forEach((key) => {
-        expect(query.validate({ [key]: true }).error).toBeNull()
+        expect(query.validate({ [key]: true }).error).toBeUndefined()
       })
 
       expect(query.validate({ notAThing: true }).error).toBeTruthy()
@@ -124,11 +124,11 @@ describe('Test route configuration', () => {
       const { query } = configForMethod.validate
 
       Object.keys(attributeValidation).forEach((key) => {
-        expect(query.validate({ [key]: 'true' }).error).toBeNull()
+        expect(query.validate({ [key]: 'true' }).error).toBeUndefined()
       })
 
       Object.keys(associationValidation).forEach((key) => {
-        expect(query.validate({ [key]: models }).error).toBeNull()
+        expect(query.validate({ [key]: models }).error).toBeUndefined()
       })
 
       expect(query.validate({ notAThing: true }).error).toBeTruthy()
@@ -136,7 +136,7 @@ describe('Test route configuration', () => {
   })
 
   test('query associationValidation w/ config as plain object', () => {
-    const config = {
+    const options = {
       validate: {
         query: {
           aKey: Joi.boolean()
@@ -148,16 +148,16 @@ describe('Test route configuration', () => {
       const configForMethod = getConfigForMethod({
         method,
         associationValidation,
-        config
+        options
       })
       const { query } = configForMethod.validate
 
       Object.keys(associationValidation).forEach((key) => {
-        expect(query.validate({ [key]: models }).error).toBeNull()
+        expect(query.validate({ [key]: models }).error).toBeUndefined()
       })
 
-      Object.keys(config.validate.query).forEach((key) => {
-        expect(query.validate({ [key]: true }).error).toBeNull()
+      Object.keys(options.validate.query).forEach((key) => {
+        expect(query.validate({ [key]: true }).error).toBeUndefined()
       })
 
       expect(query.validate({ notAThing: true }).error).toBeTruthy()
@@ -168,7 +168,7 @@ describe('Test route configuration', () => {
     const queryKeys = {
       aKey: Joi.boolean()
     }
-    const config = {
+    const options = {
       validate: {
         query: Joi.object().keys(queryKeys)
       }
@@ -178,16 +178,16 @@ describe('Test route configuration', () => {
       const configForMethod = getConfigForMethod({
         method,
         associationValidation,
-        config
+        options
       })
       const { query } = configForMethod.validate
 
       Object.keys(associationValidation).forEach((key) => {
-        expect(query.validate({ [key]: models }).error).toBeNull()
+        expect(query.validate({ [key]: models }).error).toBeUndefined()
       })
 
       Object.keys(queryKeys).forEach((key) => {
-        expect(query.validate({ [key]: true }).error).toBeNull()
+        expect(query.validate({ [key]: true }).error).toBeUndefined()
       })
 
       expect(query.validate({ notAThing: true }).error).toBeTruthy()
@@ -200,7 +200,7 @@ describe('Test route configuration', () => {
       const { payload } = configForMethod.validate
 
       Object.keys(attributeValidation).forEach((key) => {
-        expect(payload.validate({ [key]: true }).error).toBeNull()
+        expect(payload.validate({ [key]: true }).error).toBeUndefined()
       })
 
       expect(payload.validate({ notAThing: true }).error).toBeTruthy()
@@ -208,7 +208,7 @@ describe('Test route configuration', () => {
   })
 
   test('payload attributeValidation w/ config as plain object', () => {
-    const config = {
+    const options = {
       validate: {
         payload: {
           aKey: Joi.boolean()
@@ -220,17 +220,17 @@ describe('Test route configuration', () => {
       const configForMethod = getConfigForMethod({
         method,
         attributeValidation,
-        config
+        options
       })
       const { payload } = configForMethod.validate
 
       const keys = [
         ...Object.keys(attributeValidation),
-        ...Object.keys(config.validate.payload)
+        ...Object.keys(options.validate.payload)
       ]
 
       keys.forEach((key) => {
-        expect(payload.validate({ [key]: true }).error).toBeNull()
+        expect(payload.validate({ [key]: true }).error).toBeUndefined()
       })
 
       expect(payload.validate({ notAThing: true }).error).toBeTruthy()
@@ -241,7 +241,7 @@ describe('Test route configuration', () => {
     const payloadKeys = {
       aKey: Joi.boolean()
     }
-    const config = {
+    const options = {
       validate: {
         payload: Joi.object().keys(payloadKeys)
       }
@@ -251,7 +251,7 @@ describe('Test route configuration', () => {
       const configForMethod = getConfigForMethod({
         method,
         attributeValidation,
-        config
+        options
       })
       const { payload } = configForMethod.validate
 
@@ -261,7 +261,7 @@ describe('Test route configuration', () => {
       ]
 
       keys.forEach((key) => {
-        expect(payload.validate({ [key]: true }).error).toBeNull()
+        expect(payload.validate({ [key]: true }).error).toBeUndefined()
       })
 
       expect(payload.validate({ notAThing: true }).error).toBeTruthy()
@@ -274,7 +274,7 @@ describe('Test route configuration', () => {
       const { params } = configForMethod.validate
 
       scopes.forEach((key) => {
-        expect(params.validate({ scope: key }).error).toBeNull()
+        expect(params.validate({ scope: key }).error).toBeUndefined()
       })
 
       expect(params.validate({ notAThing: true }).error).toBeTruthy()
@@ -282,7 +282,7 @@ describe('Test route configuration', () => {
   })
 
   test('params scopeParamsMethods w/ config as plain object', () => {
-    const config = {
+    const options = {
       validate: {
         params: {
           aKey: Joi.boolean()
@@ -294,16 +294,16 @@ describe('Test route configuration', () => {
       const configForMethod = getConfigForMethod({
         method,
         scopes,
-        config
+        options
       })
       const { params } = configForMethod.validate
 
       scopes.forEach((key) => {
-        expect(params.validate({ scope: key }).error).toBeNull()
+        expect(params.validate({ scope: key }).error).toBeUndefined()
       })
 
-      Object.keys(config.validate.params).forEach((key) => {
-        expect(params.validate({ [key]: true }).error).toBeNull()
+      Object.keys(options.validate.params).forEach((key) => {
+        expect(params.validate({ [key]: true }).error).toBeUndefined()
       })
 
       expect(params.validate({ notAThing: true }).error).toBeTruthy()
@@ -314,7 +314,7 @@ describe('Test route configuration', () => {
     const paramsKeys = {
       aKey: Joi.boolean()
     }
-    const config = {
+    const options = {
       validate: {
         params: Joi.object().keys(paramsKeys)
       }
@@ -324,16 +324,16 @@ describe('Test route configuration', () => {
       const configForMethod = getConfigForMethod({
         method,
         scopes,
-        config
+        options
       })
       const { params } = configForMethod.validate
 
       scopes.forEach((key) => {
-        expect(params.validate({ scope: key }).error).toBeNull()
+        expect(params.validate({ scope: key }).error).toBeUndefined()
       })
 
       Object.keys(paramsKeys).forEach((key) => {
-        expect(params.validate({ [key]: true }).error).toBeNull()
+        expect(params.validate({ [key]: true }).error).toBeUndefined()
       })
 
       expect(params.validate({ notAThing: true }).error).toBeTruthy()
@@ -345,7 +345,7 @@ describe('Test route configuration', () => {
       const configForMethod = getConfigForMethod({ method })
       const { params } = configForMethod.validate
 
-      expect(params.validate({ id: 'aThing' }).error).toBeNull()
+      expect(params.validate({ id: 'aThing' }).error).toBeUndefined()
     })
   })
 
@@ -356,16 +356,16 @@ describe('Test route configuration', () => {
       const restrictKeys = ['limit', 'offset']
 
       restrictKeys.forEach((key) => {
-        expect(query.validate({ [key]: 0 }).error).toBeNull()
+        expect(query.validate({ [key]: 0 }).error).toBeUndefined()
       })
 
-      expect(query.validate({ order: ['thing', 'DESC'] }).error).toBeNull()
+      expect(query.validate({ order: ['thing', 'DESC'] }).error).toBeUndefined()
       expect(query.validate({ notAThing: true }).error).toBeTruthy()
     })
   })
 
   test('validate.query restrictMethods w/ config as plain object', () => {
-    const config = {
+    const options = {
       validate: {
         query: {
           aKey: Joi.boolean()
@@ -376,16 +376,16 @@ describe('Test route configuration', () => {
     restrictMethods.forEach((method) => {
       const configForMethod = getConfigForMethod({
         method,
-        config
+        options
       })
       const { query } = configForMethod.validate
 
       const keys = [
-        ...Object.keys(config.validate.query)
+        ...Object.keys(options.validate.query)
       ]
 
       keys.forEach((key) => {
-        expect(query.validate({ [key]: true }).error).toBeNull()
+        expect(query.validate({ [key]: true }).error).toBeUndefined()
       })
 
       expect(query.validate({ notAThing: true }).error).toBeTruthy()
@@ -396,7 +396,7 @@ describe('Test route configuration', () => {
     const queryKeys = {
       aKey: Joi.boolean()
     }
-    const config = {
+    const options = {
       validate: {
         query: Joi.object().keys(queryKeys)
       }
@@ -405,7 +405,7 @@ describe('Test route configuration', () => {
     whereMethods.forEach((method) => {
       const configForMethod = getConfigForMethod({
         method,
-        config
+        options
       })
       const { query } = configForMethod.validate
 
@@ -414,7 +414,7 @@ describe('Test route configuration', () => {
       ]
 
       keys.forEach((key) => {
-        expect(query.validate({ [key]: true }).error).toBeNull()
+        expect(query.validate({ [key]: true }).error).toBeUndefined()
       })
 
       expect(query.validate({ notAThing: true }).error).toBeTruthy()
@@ -422,10 +422,10 @@ describe('Test route configuration', () => {
   })
 
   test('does not modify initial config on multiple passes', () => {
-    const originalConfig = { ...config }
+    const originalConfig = { ...options }
     whereMethods.forEach((method) => {
-      getConfigForMethod({ method, models, scopes, config, attributeValidation, associationValidation })
+      getConfigForMethod({ method, models, scopes, options, attributeValidation, associationValidation })
     })
-    expect(config).toEqual(originalConfig)
+    expect(options).toEqual(originalConfig)
   })
 })

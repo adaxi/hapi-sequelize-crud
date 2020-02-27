@@ -4,14 +4,16 @@ const { setupServer, setupModels, stopServer, modelNames } = require('../test/in
 
 describe('Test routes existence', () => {
   let server
+  let sequelize
+
   beforeAll(async () => {
-    server = await setupServer()
-    await setupModels()
+    const { server: _server, sequelize: _sequelize } = await setupServer()
+    server = _server
+    sequelize = _sequelize
+    await setupModels(sequelize)
   })
 
-  afterAll(() => {
-    stopServer()
-  })
+  afterAll(() => stopServer(server))
 
   modelNames.forEach(({ singular, plural }) => {
     test(`Test route for 'get' for '/${singular}/{id?}'`, () => {

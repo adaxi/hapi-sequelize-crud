@@ -10,15 +10,15 @@ describe('Test destroy', () => {
   let server
   let instances
   let sequelize
+
   beforeEach(async () => {
-    server = await setupServer()
-    sequelize = server.plugins['hapi-sequelizejs'].db.sequelize
-    instances = await setupModels()
+    const { server: _server, sequelize: _sequelize } = await setupServer()
+    server = _server
+    sequelize = _sequelize
+    instances = await setupModels(sequelize)
   })
 
-  afterEach(() => {
-    stopServer()
-  })
+  afterEach(() => stopServer(server))
 
   test('destroy where /player?name=Baseball', async () => {
     const { models: { Player } } = sequelize

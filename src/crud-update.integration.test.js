@@ -9,14 +9,16 @@ describe('Test update', () => {
 
   let server
   let instances
+  let sequelize
+
   beforeEach(async () => {
-    server = await setupServer()
-    instances = await setupModels()
+    const { server: _server, sequelize: _sequelize } = await setupServer()
+    server = _server
+    sequelize = _sequelize
+    instances = await setupModels(sequelize)
   })
 
-  afterEach(() => {
-    stopServer()
-  })
+  afterEach(() => stopServer(server))
 
   test('where /player/1 {name: "Chard"}', async () => {
     const { player1 } = instances

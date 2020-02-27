@@ -8,14 +8,16 @@ describe('Test where', () => {
 
   let server
   let instances
+  let sequelize
+
   beforeEach(async () => {
-    server = await setupServer()
-    instances = await setupModels()
+    const { server: _server, sequelize: _sequelize } = await setupServer()
+    server = _server
+    sequelize = _sequelize
+    instances = await setupModels(sequelize)
   })
 
-  afterEach(() => {
-    stopServer()
-  })
+  afterEach(() => stopServer(server))
 
   test('single result /team?name=Baseball', async () => {
     const { team1 } = instances

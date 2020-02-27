@@ -7,14 +7,16 @@ describe('Test list limit and offset', () => {
   const STATUS_NOT_FOUND = 404
 
   let server
+  let sequelize
+
   beforeEach(async () => {
-    server = await setupServer()
-    await setupModels()
+    const { server: _server, sequelize: _sequelize } = await setupServer()
+    server = _server
+    sequelize = _sequelize
+    await setupModels(sequelize)
   })
 
-  afterEach(() => {
-    stopServer()
-  })
+  afterEach(() => stopServer(server))
 
   test('/players?limit=2', async () => {
     const limit = 2

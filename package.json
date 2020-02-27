@@ -18,19 +18,19 @@
   "author": "Mahdi Dibaiee <mdibaiee@aol.com> (http://dibaiee.ir/)",
   "license": "MIT",
   "devDependencies": {
-    "@hapi/hapi": "^18.3.1",
+    "@hapi/hapi": "^19.1.1",
     "ghooks": "^2.0.4",
-    "hapi-sequelizejs": "adaxi/hapi-sequelizejs#master",
-    "portfinder": "^1.0.20",
-    "sequelize": "^5.9.4",
-    "sinon": "^7.3.2",
-    "sqlite3": "^4.0.9",
-    "standard": "^12.0.1",
-    "jest": "^24.8.0"
+    "hapi-sequelizejs": "github:adaxi/hapi-sequelizejs#master",
+    "jest": "^25.1.0",
+    "portfinder": "^1.0.25",
+    "sequelize": "^5.21.5",
+    "sinon": "^9.0.0",
+    "sqlite3": "^4.1.1",
+    "standard": "^14.3.1"
   },
   "dependencies": {
-    "@hapi/boom": "^7.4.2",
-    "@hapi/joi": "^15.1.0",
-    "lodash": "^4.17.11"
+    "@hapi/boom": "^9.0.0",
+    "@hapi/joi": "^17.1.0",
+    "lodash": "^4.17.15"
   }
 }

@@ -18,13 +18,10 @@ const modelNames = [
 ]
 
 module.exports = () => {
-  let hapi
-  let sequelize
-
   const setupServer = async () => {
-    sequelize = new Sequelize({ dialect: 'sqlite', logging: false })
+    const sequelize = new Sequelize({ dialect: 'sqlite', logging: false })
 
-    hapi = new Server({
+    const server = new Server({
       host: '0.0.0.0',
       port: await Portfinder.getPortPromise(),
       query: {
@@ -32,7 +29,7 @@ module.exports = () => {
       }
     })
 
-    await hapi.register([
+    await server.register([
       {
         plugin: require('hapi-sequelizejs'),
         options: {
@@ -51,10 +48,10 @@ module.exports = () => {
       }
     ])
 
-    return hapi
+    return { server, sequelize }
   }
 
-  const setupModels = async () => {
+  const setupModels = async (sequelize) => {
     const { Player, Team, City } = sequelize.models
     const city1 = await City.create({ name: 'Healdsburg' })
     const team1 = await Team.create({ name: 'Baseballs', cityId: city1.id })
@@ -66,7 +63,7 @@ module.exports = () => {
   }
 
   // kill the server so that we can exit and don't leak memory
-  const stopServer = () => hapi.stop()
+  const stopServer = (server) => server.stop()
 
   return { setupServer, setupModels, stopServer, modelNames }
 }

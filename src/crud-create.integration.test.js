@@ -9,15 +9,15 @@ describe('Test create', () => {
 
   let server
   let sequelize
+
   beforeEach(async () => {
-    server = await setupServer()
-    sequelize = server.plugins['hapi-sequelizejs'].db.sequelize
-    await setupModels()
+    const { server: _server, sequelize: _sequelize } = await setupServer()
+    server = _server
+    sequelize = _sequelize
+    await setupModels(sequelize)
   })
 
-  afterEach(() => {
-    stopServer()
-  })
+  afterEach(() => stopServer(server))
 
   test('where /player {name: "Chard"}', async () => {
     const { models: { Player } } = sequelize
