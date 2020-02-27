@@ -19,12 +19,12 @@ associations.
 ```javascript
 // First, register hapi-sequelize
 await register({
-  register: require('hapi-sequelize'),
+  register: require('hapi-sequelizejs'),
   options: { ... }
 });
 
 // Then, define your associations
-let db = server.plugins['hapi-sequelize'].db;
+let db = server.plugins['hapi-sequelizejs'].db;
 let models = db.sequelize.models;
 associations(models); // pretend this function defines our associations
 
