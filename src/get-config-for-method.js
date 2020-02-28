@@ -76,7 +76,7 @@ const restrictMethods = [
 ]
 
 const getConfigForMethod = ({
-  method, attributeValidation, associationValidation, scopes = [], options = {}
+  modelName, method, attributeValidation, associationValidation, scopes = [], options = {}
 }) => {
   const hasWhere = whereMethods.includes(method)
   const hasInclude = includeMethods.includes(method)
@@ -114,7 +114,8 @@ const getConfigForMethod = ({
     const payload = concatToJoiObject(Joi.object()
       .keys({
         ...attributeValidation
-      }),
+      })
+      .label(modelName),
     get(methodConfig, 'validate.payload')
     )
 

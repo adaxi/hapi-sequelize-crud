@@ -23,6 +23,7 @@ const createAll = ({
       model,
       prefix,
       options: getConfigForMethod({
+        modelName: model._Singular,
         method,
         attributeValidation,
         associationValidation,
@@ -122,6 +123,7 @@ const crud = (server, model, { prefix, defaultOptions: options, models: permissi
               model,
               prefix,
               options: getConfigForMethod({
+                modelName: model._Singular,
                 method,
                 attributeValidation,
                 associationValidation,
