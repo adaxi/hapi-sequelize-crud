@@ -9,7 +9,9 @@ This plugin depends on [`hapi-sequelizejs`](https://github.com/danecando/hapi-se
 npm install --save hapi-sequelize-crud
 ```
 
-Supports @hapi/hapi v19 and sequelize v5.
+Supported versions:
+  * [Hapi](https://hapi.dev/) - v19
+  * [Sequelize](https://sequelize.org/) - v5
 
 ## Configure
 
@@ -19,7 +21,7 @@ associations.
 ```javascript
 // First, register hapi-sequelize
 await register({
-  register: require('hapi-sequelizejs'),
+  plugin: require('hapi-sequelizejs'),
   options: { ... }
 });
 
