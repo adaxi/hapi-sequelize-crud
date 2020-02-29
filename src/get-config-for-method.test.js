@@ -12,6 +12,7 @@ const {
   sequelizeOperators
 } = require('./get-config-for-method.js')
 
+let modelName
 let models
 let scopes
 let options
@@ -22,6 +23,7 @@ describe('Test route configuration', () => {
   beforeEach(() => {
     models = ['MyModel']
     scopes = ['aScope']
+    modelName = 'MyModel'
     options = { cors: {} }
     attributeValidation = { myKey: Joi.any() }
     associationValidation = {
@@ -196,7 +198,7 @@ describe('Test route configuration', () => {
 
   test('validate.payload associationValidation', () => {
     payloadMethods.forEach((method) => {
-      const configForMethod = getConfigForMethod({ method, attributeValidation })
+      const configForMethod = getConfigForMethod({ modelName, method, attributeValidation })
       const { payload } = configForMethod.validate
 
       Object.keys(attributeValidation).forEach((key) => {
@@ -218,6 +220,7 @@ describe('Test route configuration', () => {
 
     payloadMethods.forEach((method) => {
       const configForMethod = getConfigForMethod({
+        modelName,
         method,
         attributeValidation,
         options
@@ -249,6 +252,7 @@ describe('Test route configuration', () => {
 
     payloadMethods.forEach((method) => {
       const configForMethod = getConfigForMethod({
+        modelName,
         method,
         attributeValidation,
         options
@@ -342,7 +346,7 @@ describe('Test route configuration', () => {
 
   test('validate.payload idParamsMethods', () => {
     idParamsMethods.forEach((method) => {
-      const configForMethod = getConfigForMethod({ method })
+      const configForMethod = getConfigForMethod({ modelName, method })
       const { params } = configForMethod.validate
 
       expect(params.validate({ id: 'aThing' }).error).toBeUndefined()
