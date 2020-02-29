@@ -4,6 +4,7 @@
   "description": "Hapi plugin that automatically generates RESTful API for CRUD",
   "main": "src/index.js",
   "scripts": {
+    "lint": "standard",
     "test": "standard && jest",
     "coverage": "jest --collectCoverage=true"
   },
